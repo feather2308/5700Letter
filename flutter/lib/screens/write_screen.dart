@@ -24,15 +24,26 @@ class _WriteScreenState extends State<WriteScreen> {
       return;
     }
 
+    FocusScope.of(context).unfocus();
+
     setState(() => _isLoading = true);
 
     try {
       // 1. 내 폰의 우편번호(FCM Token) 가져오기
       String? token = await FirebaseMessaging.instance.getToken();
-      print("내 폰 토큰: $token");
+      try {
+        token = await FirebaseMessaging.instance.getToken()
+          .timeout(const Duration(seconds: 2));
+      } catch (e) {
+        print("토큰 가져오기 실패: $e"); // 로그만 남기고 진행
+      }
 
       // 2. 글 + 토큰 같이 전송
-      await _apiService.saveRecord(_textController.text, "", token!);
+      _apiService.saveRecord(_textController.text, "", token!).then((_) {
+        print(">>> 백그라운드 전송 성공");
+      }).catchError((e) {
+        print(">>> 백그라운드 전송 실패: $e");
+      });
       
       if (!mounted) return;
 
@@ -41,7 +52,7 @@ class _WriteScreenState extends State<WriteScreen> {
       // 2. [수정] 팝업 띄우지 않고 바로 안내 메시지 후 홈으로 이동
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-          content: Text("기록 완료! AI가 편지를 쓰고 있습니다.\n잠시 후 홈에서 확인해주세요."),
+          content: Text("기록 완료!\nAI가 당신을 위한 편지를 쓰는 중이에요.\n조금만 기다리면 볼 수 있어요."),
           duration: Duration(seconds: 3),
           backgroundColor: Colors.brown,
         ),
@@ -51,9 +62,25 @@ class _WriteScreenState extends State<WriteScreen> {
       Navigator.pop(context); 
 
     } catch (e) {
+      // [핵심 수정] 에러 났을 때도 화면 살아있는지 확인
+      if (!mounted) return;
+
       setState(() => _isLoading = false);
+
+      // 6. 에러 메시지 띄우기
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text("오류 발생: $e")),
+        SnackBar(
+          content: Text("오류가 발생했습니다: $e"),
+          backgroundColor: Colors.red,
+          // 에러가 났을 때도 강제로 나가고 싶다면 아래 action을 주석 해제하세요
+          /*
+          action: SnackBarAction(
+            label: '나가기',
+            textColor: Colors.white,
+            onPressed: () => Navigator.pop(context),
+          ),
+          */
+        ),
       );
     }
   }

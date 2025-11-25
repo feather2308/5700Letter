@@ -10,7 +10,7 @@ class ApiService {
   static String get baseUrl => dotenv.env['API_URL'] ?? '';
 
   // 1. 일기 저장 & 조언 요청 (POST)
-  Future<Map<String, dynamic>> saveRecord(String content, String emotion) async {
+  Future<Map<String, dynamic>> saveRecord(String content, String emotion, String fcmToken) async {
     final url = Uri.parse(baseUrl);
     
     try {
@@ -21,6 +21,7 @@ class ApiService {
           "memberId": 1, // 테스트용 ID 고정
           "content": content,
           "emotion": emotion,
+          "fcmToken": fcmToken,
         }),
       );
 

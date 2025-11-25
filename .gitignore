@@ -129,3 +129,6 @@ docker-data/
 
 # IntelliJ / JetBrains IDE 프로젝트 설정 무시
 .idea/
+
+google-services.json
+firebase-account.json

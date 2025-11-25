@@ -52,6 +52,8 @@ dependencies {
 	implementation 'io.grpc:grpc-netty'
 	implementation 'io.grpc:grpc-util'      // [추가] 에러가 발생했던 DnsNameResolver가 여기 있음
 
+	implementation 'com.google.firebase:firebase-admin:9.2.0' // 추가
+
 	// Test
 	testImplementation 'org.springframework.boot:spring-boot-starter-test'
 	testImplementation 'org.springframework.security:spring-security-test'

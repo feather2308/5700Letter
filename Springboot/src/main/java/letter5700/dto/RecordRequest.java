@@ -10,4 +10,5 @@ public class RecordRequest {
     private Long memberId; // 테스트용: 누가 썼는지 ID로 받음
     private String content;
     private String emotion;
+    private String fcmToken;
 }

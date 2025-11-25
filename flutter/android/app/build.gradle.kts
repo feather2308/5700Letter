@@ -6,7 +6,7 @@ plugins {
 }
 
 android {
-    namespace = "com.example.asdf"
+    namespace = "com.example.letter_5700"
     compileSdk = flutter.compileSdkVersion
     ndkVersion = flutter.ndkVersion
 
@@ -42,3 +42,5 @@ android {
 flutter {
     source = "../.."
 }
+
+apply plugin: 'com.google.gms.google-services'

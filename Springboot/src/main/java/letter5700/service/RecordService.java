@@ -28,6 +28,7 @@ public class RecordService {
     private final AdviceRepository adviceRepository;
     private final GeminiService geminiService;
     private final RagService ragService;
+    private final FcmService fcmService;
 
     public Long saveRecord(RecordRequest request) {
         // 0. 사용자 조회
@@ -47,14 +48,14 @@ public class RecordService {
         );
         DailyRecord savedRecord = recordRepository.save(record);
 
-        generateAdviceAsync(savedRecord.getId(), request.getContent());
+        generateAdviceAsync(savedRecord.getId(), request.getContent(), request.getFcmToken());
 
         return savedRecord.getId(); // 앱에는 바로 "성공" 응답이 감
     }
 
     // 3. [비동기] 뒤에서 몰래 5700자 조언 쓰기 (@Async)
     @Async
-    public void generateAdviceAsync(Long recordId, String content) {
+    public void generateAdviceAsync(Long recordId, String content, String fcmToken) {
         try {
             System.out.println(">>> [비동기] 조언 생성 시작 (ID: " + recordId + ")");
 
@@ -95,6 +96,13 @@ public class RecordService {
                 adviceRepository.save(advice);
                 System.out.println(">>> [비동기] 조언 저장 완료! (ID: " + recordId + ")");
             });
+
+            // [마지막에 추가] 진짜 작업이 다 끝나면 알림 발사!
+            fcmService.sendNotification(
+                    fcmToken,
+                    "5700 Letter 도착",
+                    "당신에게 필요한 말, 준비됐어요."
+            );
 
         } catch (Exception e) {
             e.printStackTrace();

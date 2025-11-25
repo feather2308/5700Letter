@@ -22,3 +22,10 @@ subprojects {
 tasks.register<Delete>("clean") {
     delete(rootProject.layout.buildDirectory)
 }
+
+buildscript {
+    dependencies {
+        // ... 기존 것들
+        classpath 'com.google.gms:google-services:4.3.15' // 추가
+    }
+}

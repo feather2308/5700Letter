@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../services/api_service.dart';
 import '../models/record.dart';
+import 'package:firebase_messaging/firebase_messaging.dart'; // import 추가
 
 class WriteScreen extends StatefulWidget {
   const WriteScreen({super.key});
@@ -26,8 +27,12 @@ class _WriteScreenState extends State<WriteScreen> {
     setState(() => _isLoading = true);
 
     try {
-      // 1. 저장 요청 (백엔드가 비동기라 1~2초면 끝남)
-      await _apiService.saveRecord(_textController.text, ""); 
+      // 1. 내 폰의 우편번호(FCM Token) 가져오기
+      String? token = await FirebaseMessaging.instance.getToken();
+      print("내 폰 토큰: $token");
+
+      // 2. 글 + 토큰 같이 전송
+      await _apiService.saveRecord(_textController.text, "", token!);
       
       if (!mounted) return;
 

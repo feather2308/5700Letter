@@ -3,9 +3,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'screens/home_screen.dart';
+import 'package:firebase_core/firebase_core.dart'; // 추가
 
 void main() async {
   await dotenv.load(fileName: ".env");
+  await Firebase.initializeApp(); // [추가] 파이어베이스 시동
+
   runApp(const MyApp());
 }
 

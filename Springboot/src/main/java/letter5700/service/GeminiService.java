@@ -1,42 +1,41 @@
 package letter5700.service;
 
-import letter5700.dto.GeminiRequest;
-import letter5700.dto.GeminiResponse;
-import lombok.RequiredArgsConstructor;
+import com.google.genai.Client;
+import com.google.genai.types.GenerateContentResponse;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
-import org.springframework.web.client.RestTemplate;
 
 @Service
-@RequiredArgsConstructor
 public class GeminiService {
 
-    @Value("${gemini.api.key}")
-    private String apiKey;
+    private final Client client;
 
-    @Value("${gemini.api.url}")
-    private String apiUrl;
-
-    private final RestTemplate restTemplate = new RestTemplate();
+    // 생성자에서 API 키를 주입받아 Client 초기화
+    public GeminiService(@Value("${gemini.api.key}") String apiKey) {
+        this.client = Client.builder()
+                .apiKey(apiKey)
+                .build();
+    }
 
     public String getAdvice(String userRecord) {
-        // 1. 요청 URL 완성 (키 포함)
-        String requestUrl = apiUrl + "?key=" + apiKey;
+        try {
+            // 1. 모델명과 프롬프트 설정 (Gemini 1.5 Flash 사용)
+            String modelName = "gemini-1.5-flash";
+            String prompt = "다음 일기를 쓴 사람에게 5700자 내외의 따뜻하고 깊이 있는 조언을 해줘:\n\n" + userRecord;
 
-        // 2. 프롬프트 구성 (나중에 RAG와 프롬프트 빌더로 고도화 예정)
-        String prompt = "다음 일기를 쓴 사람에게 5700자 내외의 따뜻하고 깊이 있는 조언을 해줘:\n\n" + userRecord;
+            // 2. 라이브러리를 통해 요청 전송
+            GenerateContentResponse response = client.models.generateContent(
+                    modelName,
+                    prompt,
+                    null
+            );
 
-        // 3. 요청 객체 생성
-        GeminiRequest request = GeminiRequest.create(prompt);
+            // 3. 응답 텍스트 추출
+            return response.text();
 
-        // 4. API 호출
-        GeminiResponse response = restTemplate.postForObject(requestUrl, request, GeminiResponse.class);
-
-        // 5. 응답 파싱 (텍스트만 추출)
-        if (response != null && !response.getCandidates().isEmpty()) {
-            return response.getCandidates().get(0).getContent().getParts().get(0).getText();
+        } catch (Exception e) {
+            e.printStackTrace();
+            return "조언 생성 중 오류가 발생했습니다: " + e.getMessage();
         }
-
-        return "조언 생성에 실패했습니다.";
     }
 }

@@ -34,6 +34,9 @@ dependencies {
 	compileOnly 'org.projectlombok:lombok'
 	annotationProcessor 'org.projectlombok:lombok'
 
+	// [추가] Google GenAI 공식 라이브러리
+	implementation 'com.google.genai:google-genai:1.4.0'
+
 	// Test
 	testImplementation 'org.springframework.boot:spring-boot-starter-test'
 	testImplementation 'org.springframework.security:spring-security-test'

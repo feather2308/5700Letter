@@ -33,4 +33,10 @@ public class RecordController {
     public String testGemini(@RequestBody String text) {
         return geminiService.getAdvice(text);
     }
+
+    // [테스트] Gemini 연결 확인용
+    @GetMapping("/test-gemini")
+    public String testGeminiGet(@RequestParam("text") String text) {
+        return geminiService.getAdvice(text);
+    }
 }

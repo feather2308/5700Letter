@@ -26,17 +26,24 @@ class _WriteScreenState extends State<WriteScreen> {
     setState(() => _isLoading = true);
 
     try {
-      // 감정은 서버에서 자동 분석하므로 빈 값("") 전송
-      final result = await _apiService.saveRecord(_textController.text, ""); 
-      int recordId = result['recordId'];
-
+      // 1. 저장 요청 (백엔드가 비동기라 1~2초면 끝남)
+      await _apiService.saveRecord(_textController.text, ""); 
+      
       if (!mounted) return;
 
-      _textController.clear();
       setState(() => _isLoading = false);
 
-      // 팝업 띄우기
-      _showAdviceDialog(recordId);
+      // 2. [수정] 팝업 띄우지 않고 바로 안내 메시지 후 홈으로 이동
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text("기록 완료! AI가 편지를 쓰고 있습니다.\n잠시 후 홈에서 확인해주세요."),
+          duration: Duration(seconds: 3),
+          backgroundColor: Colors.brown,
+        ),
+      );
+
+      // 3. 홈으로 복귀
+      Navigator.pop(context); 
 
     } catch (e) {
       setState(() => _isLoading = false);
@@ -106,7 +113,18 @@ class _WriteScreenState extends State<WriteScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text("오늘의 기록")),
+      appBar: AppBar(
+  title: const Text("기록 남기기"), // 예: "기록 작성", "히스토리", "설정"
+  centerTitle: true,
+  automaticallyImplyLeading: false, // [중요] 좌상단 기본 화살표 제거
+  actions: [
+    IconButton(
+      icon: const Icon(Icons.close, size: 28), // 톱니바퀴 위치에 '닫기' 아이콘 배치
+      onPressed: () => Navigator.pop(context), // 누르면 홈으로 내려감
+    ),
+    const SizedBox(width: 10),
+  ],
+),
       body: Padding(
         padding: const EdgeInsets.all(16.0),
         child: Column(

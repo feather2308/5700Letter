@@ -7,7 +7,18 @@ class SettingsScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text("설정")),
+      appBar: AppBar(
+  title: const Text("설정"), // 예: "기록 작성", "히스토리", "설정"
+  centerTitle: true,
+  automaticallyImplyLeading: false, // [중요] 좌상단 기본 화살표 제거
+  actions: [
+    IconButton(
+      icon: const Icon(Icons.close, size: 28), // 톱니바퀴 위치에 '닫기' 아이콘 배치
+      onPressed: () => Navigator.pop(context), // 누르면 홈으로 내려감
+    ),
+    const SizedBox(width: 10),
+  ],
+),
       body: ListView(
         children: [
           // 1. 계정 설정 섹션

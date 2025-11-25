@@ -12,6 +12,7 @@ import io.qdrant.client.grpc.Points; // ScoredPoint import
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.scheduling.annotation.Async; // import 추가
 
 import java.time.LocalDate;
 import java.util.List;
@@ -46,43 +47,59 @@ public class RecordService {
         );
         DailyRecord savedRecord = recordRepository.save(record);
 
-        // ---------------------------------------------------------
-        // [RAG 핵심 로직]
+        generateAdviceAsync(savedRecord.getId(), request.getContent());
 
-        // 3. 사용자 일기 내용을 벡터로 변환 (Gemini 이용)
-        List<Float> queryVector = geminiService.createEmbedding(request.getContent());
+        return savedRecord.getId(); // 앱에는 바로 "성공" 응답이 감
+    }
 
-        // 4. Qdrant에서 유사한 지식 검색 (Top 3)
-        List<Points.ScoredPoint> searchResults = ragService.search(queryVector, 3);
+    // 3. [비동기] 뒤에서 몰래 5700자 조언 쓰기 (@Async)
+    @Async
+    public void generateAdviceAsync(Long recordId, String content) {
+        try {
+            System.out.println(">>> [비동기] 조언 생성 시작 (ID: " + recordId + ")");
 
-        // 5. 검색된 지식들을 하나의 문자열로 합치기
-        // (ScoredPoint 객체에서 'content'라는 이름의 payload를 꺼내서 합침)
-        String knowledgeContext = searchResults.stream()
-                .map(point -> point.getPayloadMap().get("content").getStringValue())
-                .collect(Collectors.joining("\n- "));
+            // ---------------------------------------------------------
+            // [RAG 핵심 로직 통합]
 
-        // 6. 프롬프트 구성 (검색된 지식 + 사용자 일기)
-        String finalPrompt = String.format("""
-            당신은 심리 상담 전문가이자 따뜻한 조언자입니다.
-            아래 '참고 지식'을 바탕으로, 사용자의 일기에 대해 5700자 내외의 깊이 있는 편지를 써주세요.
-            
-            [참고 지식 (DB 검색 결과)]
-            - %s
-            
-            [사용자 일기]
-            %s
-            """, knowledgeContext, request.getContent());
+            // 1. 사용자 일기 내용을 벡터로 변환
+            List<Float> queryVector = geminiService.createEmbedding(content);
 
-        // 7. Gemini에게 최종 요청 (조언 생성)
-        String aiAdvice = geminiService.getAdvice(finalPrompt);
+            // 2. Qdrant에서 유사한 지식 검색 (Top 3)
+            List<Points.ScoredPoint> searchResults = ragService.search(queryVector, 3);
 
-        // ---------------------------------------------------------
+            // 3. 검색된 지식들을 하나의 문자열로 합치기
+            String knowledgeContext = searchResults.stream()
+                    .map(point -> point.getPayloadMap().get("content").getStringValue())
+                    .collect(Collectors.joining("\n- "));
 
-        // 8. 생성된 조언을 DB에 저장
-        Advice advice = new Advice(savedRecord, aiAdvice);
-        adviceRepository.save(advice);
+            // 4. 프롬프트 구성 (검색된 지식 + 사용자 일기)
+            String finalPrompt = String.format("""
+                당신은 심리 상담 전문가이자 따뜻한 조언자입니다.
+                아래 '참고 지식'을 바탕으로, 사용자의 일기에 대해 5700자 내외의 깊이 있는 편지를 써주세요.
+                
+                [참고 지식 (DB 검색 결과)]
+                - %s
+                
+                [사용자 일기]
+                %s
+                """, knowledgeContext, content);
 
-        return savedRecord.getId();
+            // 5. Gemini에게 최종 요청 (조언 생성 - 시간 오래 걸림)
+            String aiAdvice = geminiService.getAdvice(finalPrompt);
+
+            // ---------------------------------------------------------
+
+            // 6. DB 업데이트 (비동기라 다시 조회해서 저장)
+            recordRepository.findById(recordId).ifPresent(record -> {
+                Advice advice = new Advice(record, aiAdvice);
+                adviceRepository.save(advice);
+                System.out.println(">>> [비동기] 조언 저장 완료! (ID: " + recordId + ")");
+            });
+
+        } catch (Exception e) {
+            e.printStackTrace();
+            System.err.println(">>> [비동기] 조언 생성 실패: " + e.getMessage());
+        }
     }
 
     // [추가] 1. 단건 조회 (특정 일기와 조언 보기)

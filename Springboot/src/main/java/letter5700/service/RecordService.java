@@ -1,5 +1,6 @@
 package letter5700.service;
 
+import letter5700.dto.RecordResponse;
 import letter5700.entity.Advice;
 import letter5700.entity.DailyRecord;
 import letter5700.entity.Member;
@@ -78,5 +79,24 @@ public class RecordService {
         adviceRepository.save(advice);
 
         return savedRecord.getId();
+    }
+
+    // [추가] 1. 단건 조회 (특정 일기와 조언 보기)
+    @Transactional(readOnly = true)
+    public RecordResponse getRecord(Long recordId) {
+        DailyRecord record = recordRepository.findById(recordId)
+                .orElseThrow(() -> new IllegalArgumentException("기록을 찾을 수 없습니다."));
+        return new RecordResponse(record);
+    }
+
+    // [추가] 2. 목록 조회 (특정 사용자의 모든 기록)
+    @Transactional(readOnly = true)
+    public List<RecordResponse> getMemberRecords(Long memberId) {
+        // 원래는 MemberRepository에서 records를 가져오거나 별도 쿼리를 짜야 함
+        // 편의상 DailyRecordRepository에 메서드가 필요함 (아래 3번 참고)
+        return recordRepository.findAllByMemberIdOrderByRecordDateDesc(memberId)
+                .stream()
+                .map(RecordResponse::new)
+                .collect(Collectors.toList());
     }
 }

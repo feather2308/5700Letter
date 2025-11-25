@@ -1,11 +1,14 @@
 package letter5700.controller;
 
 import letter5700.dto.RecordRequest;
+import letter5700.dto.RecordResponse;
 import letter5700.service.GeminiService;
 import letter5700.service.RecordService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+
+import java.util.List;
 
 @RestController
 @RequestMapping("/api/records") // 공통 주소
@@ -38,5 +41,18 @@ public class RecordController {
     @GetMapping("/test-gemini")
     public String testGeminiGet(@RequestParam("text") String text) {
         return geminiService.getAdvice(text);
+    }
+
+    // [추가] 1. 상세 조회 API (GET /api/records/{id})
+    @GetMapping("/{id}")
+    public ResponseEntity<RecordResponse> getRecord(@PathVariable Long id) {
+        return ResponseEntity.ok(recordService.getRecord(id));
+    }
+
+    // [추가] 2. 내 기록 목록 조회 API (GET /api/records/member/{memberId})
+    // (원래는 토큰에서 멤버 ID를 꺼내야 하지만, 지금은 파라미터로 받음)
+    @GetMapping("/member/{memberId}")
+    public ResponseEntity<List<RecordResponse>> getMemberRecords(@PathVariable Long memberId) {
+        return ResponseEntity.ok(recordService.getMemberRecords(memberId));
     }
 }

@@ -41,7 +41,16 @@ dependencies {
 	implementation 'io.qdrant:client:1.16.0'
 	implementation 'com.google.protobuf:protobuf-java:4.28.2'  // ★ 추가
 
-	implementation platform('io.grpc:grpc-bom:1.65.1')
+	// [핵심] enforcedPlatform: 다른 라이브러리가 뭐라 하든 무조건 1.65.1을 사용하도록 강제함
+	implementation enforcedPlatform('io.grpc:grpc-bom:1.77.0')
+
+	// gRPC 필수 모듈 (버전은 위 BOM이 결정하므로 생략)
+	implementation 'io.grpc:grpc-api'
+	implementation 'io.grpc:grpc-core'      // [추가] 내부 구현체
+	implementation 'io.grpc:grpc-stub'
+	implementation 'io.grpc:grpc-protobuf'
+	implementation 'io.grpc:grpc-netty'
+	implementation 'io.grpc:grpc-util'      // [추가] 에러가 발생했던 DnsNameResolver가 여기 있음
 
 	// Test
 	testImplementation 'org.springframework.boot:spring-boot-starter-test'

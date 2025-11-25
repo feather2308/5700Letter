@@ -1,9 +1,11 @@
 package letter5700.service;
 
 import com.google.genai.Client;
-import com.google.genai.types.GenerateContentResponse;
+import com.google.genai.types.*;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
+
+import java.util.List;
 
 @Service
 public class GeminiService {
@@ -20,8 +22,23 @@ public class GeminiService {
     public String getAdvice(String userRecord) {
         try {
             // 1. 모델명과 프롬프트 설정 (Gemini 1.5 Flash 사용)
-            String modelName = "gemini-1.5-flash";
-            String prompt = "다음 일기를 쓴 사람에게 5700자 내외의 따뜻하고 깊이 있는 조언을 해줘:\n\n" + userRecord;
+            String modelName = "gemini-2.5-flash";
+            String prompt = """
+            당신은 '5700 레터'라는 서비스의 AI 조언자입니다.
+            사용자의 일기를 읽고, 그 마음을 깊이 헤아려 약 5,700자 분량(공백 포함)의 매우 긴 편지를 써주세요.
+            
+            [지침]
+            1. 단순한 위로를 넘어, 심리적/철학적 통찰을 제공하세요.
+            2. 문체는 따뜻하고 서정적이며, 때로는 냉철한 분석도 포함하세요.
+            3. 서론-본론(다각도 분석)-결론의 구조를 갖추고 풍부한 문장을 사용하세요.
+            4. 절대 요약하지 말고, 이야기를 풀어서 서술하세요.
+            5. 답변을 작성할 때 문장 앞에 숫자를 붙이는 형태의 번호 매기기를 사용하지 않는다
+            6. 문장을 강조할 때 별표(*)를 이용한 굵게 표시를 사용하지 않는다
+            7. 과도한 장식, 과도한 Markdown 형식, 불필요한 시각적 강조를 피한다
+            
+            [사용자 일기]
+            %s
+            """.formatted(userRecord);
 
             // 2. 라이브러리를 통해 요청 전송
             GenerateContentResponse response = client.models.generateContent(
@@ -35,7 +52,39 @@ public class GeminiService {
 
         } catch (Exception e) {
             e.printStackTrace();
-            return "조언 생성 중 오류가 발생했습니다: " + e.getMessage();
+            return "아직 마음을 정리하는 중입니다. 잠시 후 다시 시도해주세요. (Error: " + e.getMessage() + ")";
         }
     }
+
+    // [추가] 텍스트 -> 벡터 변환 메서드
+    public List<Float> createEmbedding(String text) {
+        try {
+            EmbedContentResponse response = client.models.embedContent(
+                    "text-embedding-004",
+                    text,
+                    null
+            );
+
+            List<ContentEmbedding> embeddingList =
+                    response.embeddings().orElseThrow(() ->
+                            new RuntimeException("임베딩 응답에 embeddings 필드가 없습니다.")
+                    );
+
+            if (embeddingList.isEmpty()) {
+                throw new RuntimeException("임베딩 리스트가 비어 있습니다.");
+            }
+
+            ContentEmbedding embedding = embeddingList.get(0);
+
+            // 여기! embedding.values() 가 Optional<List<Float>> 라서 풀어줘야 함
+
+            return embedding.values().orElseThrow(() ->
+                    new RuntimeException("임베딩 값이 없습니다.")
+            );
+
+        } catch (Exception e) {
+            throw new RuntimeException("임베딩 생성 중 오류 발생: " + e.getMessage(), e);
+        }
+    }
+
 }

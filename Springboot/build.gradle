@@ -37,6 +37,14 @@ dependencies {
 	// [추가] Google GenAI 공식 라이브러리
 	implementation 'com.google.genai:google-genai:1.4.0'
 
+	// [추가] Qdrant Java Client (벡터 DB 통신용)
+	implementation 'io.qdrant:client:1.16.0'
+	implementation 'com.google.protobuf:protobuf-java:4.28.2'  // ★ 추가
+
+	implementation 'io.grpc:grpc-netty:1.63.0'
+	implementation 'io.grpc:grpc-protobuf:1.63.0'
+	implementation 'io.grpc:grpc-stub:1.63.0'
+
 	// Test
 	testImplementation 'org.springframework.boot:spring-boot-starter-test'
 	testImplementation 'org.springframework.security:spring-security-test'

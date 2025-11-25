@@ -2,6 +2,7 @@ package letter5700;
 
 import letter5700.entity.Member;
 import letter5700.repository.MemberRepository;
+import letter5700.service.RagService;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.context.annotation.Bean;
 
@@ -26,4 +27,10 @@ public class SpringbootApplication {
 		};
 	}
 
+	@Bean
+	public CommandLineRunner initRAG(RagService ragService) {
+		return args -> {
+			ragService.initKnowledgeBase(); // 서버 시작 시 지식 DB 구축
+		};
+	}
 }

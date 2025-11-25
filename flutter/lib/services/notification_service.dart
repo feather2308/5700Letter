@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 
@@ -8,6 +9,12 @@ class NotificationService {
 
   final FlutterLocalNotificationsPlugin flutterLocalNotificationsPlugin =
   FlutterLocalNotificationsPlugin();
+
+  // [추가] 1. 알림이 왔다는 신호를 보내줄 방송국(StreamController)
+  final StreamController<void> _refreshStreamController = StreamController.broadcast();
+
+  // 외부에서 이 방송을 들을 수 있게 getter 제공
+  Stream<void> get onRefreshNeeded => _refreshStreamController.stream;
 
   // 1. 초기화 및 리스너 등록
   Future<void> init() async {
@@ -32,9 +39,11 @@ class NotificationService {
     FirebaseMessaging.onMessage.listen((RemoteMessage message) {
       print('>>> 포그라운드 메시지 수신: ${message.notification?.title}');
 
-      // 알림 내용이 있으면 로컬 알림으로 변환해서 띄움
       if (message.notification != null) {
         showNotification(message);
+
+        // [추가] 2. 알림이 오면 "새로고침 하세요!" 신호를 쏨
+        _refreshStreamController.add(null);
       }
     });
   }

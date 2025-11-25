@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
-import 'package:intl/intl.dart'; // 날짜 포맷용
+import 'package:intl/intl.dart';
+import 'dart:async';
 import '../services/api_service.dart';
+import '../services/notification_service.dart';
 import '../models/record.dart';
 
 class HistoryScreen extends StatefulWidget {
@@ -10,18 +12,46 @@ class HistoryScreen extends StatefulWidget {
   State<HistoryScreen> createState() => _HistoryScreenState();
 }
 
-class _HistoryScreenState extends State<HistoryScreen> {
+// [핵심] WidgetsBindingObserver 추가 (앱 상태 감지용)
+class _HistoryScreenState extends State<HistoryScreen> with WidgetsBindingObserver {
   final ApiService _apiService = ApiService();
   late Future<List<Record>> _recordsFuture;
+  StreamSubscription? _refreshSubscription;
 
   @override
   void initState() {
     super.initState();
-    // 화면이 켜질 때 데이터 요청 (회원 ID 1번 고정)
+    // 1. 앱 상태 감지기 등록
+    WidgetsBinding.instance.addObserver(this);
+
+    // 2. 초기 데이터 로드
     _recordsFuture = _apiService.getMemberRecords(1);
+
+    // 3. (앱 켜져있을 때) 알림 오면 실시간 새로고침
+    _refreshSubscription = NotificationService().onRefreshNeeded.listen((_) {
+      print(">>> 알림 도착(Foreground)! 히스토리 자동 갱신");
+      _refreshRecords();
+    });
   }
 
-  // 새로고침 기능 (화면을 아래로 당겼을 때)
+  @override
+  void dispose() {
+    // 감지기 해제
+    WidgetsBinding.instance.removeObserver(this);
+    _refreshSubscription?.cancel();
+    super.dispose();
+  }
+
+  // [핵심] 앱 상태가 바뀔 때 실행되는 함수
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    // 사용자가 알림을 누르거나, 앱 아이콘을 눌러서 '다시 돌아왔을 때(resumed)'
+    if (state == AppLifecycleState.resumed) {
+      print(">>> 앱으로 복귀(Resumed)! 히스토리 최신화");
+      _refreshRecords();
+    }
+  }
+
   Future<void> _refreshRecords() async {
     setState(() {
       _recordsFuture = _apiService.getMemberRecords(1);
@@ -31,25 +61,24 @@ class _HistoryScreenState extends State<HistoryScreen> {
   String _formatDate(String dateString) {
     try {
       DateTime date = DateTime.parse(dateString);
-      return DateFormat('yyyy-MM-dd HH:mm').format(date);
+      return DateFormat('yy.MM.dd HH:mm').format(date);
     } catch (e) {
       return "-";
     }
   }
 
-  // 상세 조언 보기 팝업
+  // ... (showDetailDialog 및 UI 코드는 기존과 동일하므로 생략하지 않고 전체 제공)
   void _showDetailDialog(Record record) {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        title: Text(record.emotion.isNotEmpty ? "${record.emotion}의 날" : "기록된 날"),
+        title: Text(record.emotion.isNotEmpty ? "${record.emotion}의 날" : "분석 중"),
         content: SizedBox(
           width: double.maxFinite,
           child: SingleChildScrollView(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                // 팝업 안에도 날짜 상세 표시
                 Text(
                   _formatDate(record.date),
                   style: const TextStyle(color: Colors.grey, fontSize: 13),
@@ -61,7 +90,7 @@ class _HistoryScreenState extends State<HistoryScreen> {
                 const Text("[5700 Letter]", style: TextStyle(fontWeight: FontWeight.bold, color: Colors.amber)),
                 const SizedBox(height: 10),
                 Text(
-                  record.adviceContent ?? "조언 생성 중...",
+                  record.adviceContent ?? "AI가 열심히 편지를 쓰고 있습니다...",
                   style: const TextStyle(height: 1.5),
                 ),
               ],
@@ -84,7 +113,7 @@ class _HistoryScreenState extends State<HistoryScreen> {
       appBar: AppBar(
         title: const Text("지난 기록들"),
         centerTitle: true,
-        automaticallyImplyLeading: false, // 기본 뒤로가기 제거
+        automaticallyImplyLeading: false,
         actions: [
           IconButton(
             icon: const Icon(Icons.close, size: 28),
@@ -116,21 +145,32 @@ class _HistoryScreenState extends State<HistoryScreen> {
               itemBuilder: (context, index) {
                 final record = records[index];
 
+                // 조언 생성 여부 확인 (null이면 생성 중)
+                bool isPending = record.adviceContent == null;
+
                 return Card(
                   elevation: 2,
                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                   child: ListTile(
                     contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
                     leading: CircleAvatar(
-                      backgroundColor: Colors.amber[100],
-                      child: const Icon(Icons.book, color: Colors.brown),
+                      backgroundColor: isPending ? Colors.grey[200] : Colors.amber[100],
+                      child: Icon(
+                          isPending ? Icons.hourglass_top : Icons.book,
+                          color: isPending ? Colors.grey : Colors.brown
+                      ),
                     ),
                     title: Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
                         Text(
-                          record.emotion.isEmpty ? "무제" : record.emotion,
-                          style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                          // 감정도 아직 없으면(빈문자열) '분석 중' 표시
+                          record.emotion.isEmpty ? "분석 중..." : record.emotion,
+                          style: TextStyle(
+                              fontWeight: FontWeight.bold,
+                              fontSize: 16,
+                              color: isPending ? Colors.grey : Colors.black
+                          ),
                         ),
                         Text(
                           _formatDate(record.date),
@@ -141,16 +181,24 @@ class _HistoryScreenState extends State<HistoryScreen> {
                     subtitle: Padding(
                       padding: const EdgeInsets.only(top: 4),
                       child: Text(
-                        record.content,
+                        isPending ? "AI가 감정을 분석하고 편지를 씁니다..." : record.content,
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
-                        style: const TextStyle(color: Colors.black54),
+                        style: TextStyle(
+                          color: isPending ? Colors.amber : Colors.black54,
+                          fontStyle: isPending ? FontStyle.italic : FontStyle.normal,
+                        ),
                       ),
                     ),
-                    // [복구] 화살표 아이콘 다시 추가
-                    trailing: const Icon(Icons.arrow_forward_ios, size: 14, color: Colors.grey),
+                    trailing: isPending
+                        ? const SizedBox(
+                        width: 16,
+                        height: 16,
+                        child: CircularProgressIndicator(strokeWidth: 2, color: Colors.amber)
+                    )
+                        : const Icon(Icons.arrow_forward_ios, size: 14, color: Colors.grey),
 
-                    onTap: () => _showDetailDialog(record),
+                    onTap: isPending ? null : () => _showDetailDialog(record),
                   ),
                 );
               },

@@ -35,15 +35,11 @@ public class RecordService {
         Member member = memberRepository.findById(request.getMemberId())
                 .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 회원입니다."));
 
-        // [변경] 1. 저장 전에 먼저 감정 분석 수행
-        String aiEmotion = geminiService.analyzeEmotion(request.getContent());
-        System.out.println(">>> AI가 분석한 감정: " + aiEmotion);
-
         // 2. 일기(Record) 저장
         DailyRecord record = new DailyRecord(
                 member,
                 request.getContent(),
-                aiEmotion, // request.getEmotion() 대신 aiEmotion 사용
+                "", // request.getEmotion() 대신 aiEmotion 사용
                 LocalDateTime.now()
         );
         DailyRecord savedRecord = recordRepository.save(record);
@@ -57,6 +53,11 @@ public class RecordService {
     @Async
     public void generateAdviceAsync(Long recordId, String content, String fcmToken) {
         try {
+            System.out.println(">>> [비동기] 작업 시작 (ID: " + recordId + ")");
+
+            // (1) 감정 분석 (여기서 수행!)
+            String aiEmotion = geminiService.analyzeEmotion(content);
+
             System.out.println(">>> [비동기] 조언 생성 시작 (ID: " + recordId + ")");
 
             // ---------------------------------------------------------
@@ -92,9 +93,15 @@ public class RecordService {
 
             // 6. DB 업데이트 (비동기라 다시 조회해서 저장)
             recordRepository.findById(recordId).ifPresent(record -> {
+                // 감정 업데이트
+                record.setEmotion(aiEmotion);
+                recordRepository.save(record); // 감정 반영
+
+                // 조언 저장
                 Advice advice = new Advice(record, aiAdvice);
                 adviceRepository.save(advice);
-                System.out.println(">>> [비동기] 조언 저장 완료! (ID: " + recordId + ")");
+
+                System.out.println(">>> [비동기] 완료! 감정: " + aiEmotion);
             });
 
             // [마지막에 추가] 진짜 작업이 다 끝나면 알림 발사!

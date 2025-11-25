@@ -29,7 +29,7 @@ class _HomeScreenState extends State<HomeScreen> {
       // 1. 서버가 준 문자열을 날짜 객체로 변환
       DateTime date = DateTime.parse(dateString);
       // 2. 원하는 포맷으로 변경 (예: 11월 26일 14:30)
-      return DateFormat('yyyy-MM-dd HH:mm').format(date);
+      return DateFormat('yy.MM.dd hh:mm').format(date);
     } catch (e) {
       return dateString; // 에러나면 그냥 원본 출력
     }

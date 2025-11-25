@@ -1,6 +1,7 @@
 package letter5700.controller;
 
 import letter5700.dto.RecordRequest;
+import letter5700.service.GeminiService;
 import letter5700.service.RecordService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
@@ -12,6 +13,7 @@ import org.springframework.web.bind.annotation.*;
 public class RecordController {
 
     private final RecordService recordService;
+    private final GeminiService geminiService;
 
     // 기록 저장 API
     @PostMapping
@@ -24,5 +26,11 @@ public class RecordController {
     @GetMapping("/ping")
     public String ping() {
         return "pong";
+    }
+
+    // [테스트] Gemini 연결 확인용
+    @PostMapping("/test-gemini")
+    public String testGemini(@RequestBody String text) {
+        return geminiService.getAdvice(text);
     }
 }

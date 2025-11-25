@@ -55,4 +55,11 @@ public class RecordController {
     public ResponseEntity<List<RecordResponse>> getMemberRecords(@PathVariable Long memberId) {
         return ResponseEntity.ok(recordService.getMemberRecords(memberId));
     }
+
+    // [추가] 기록 전체 삭제 API (DELETE /api/records/member/{memberId})
+    @DeleteMapping("/member/{memberId}")
+    public ResponseEntity<String> deleteAllRecords(@PathVariable Long memberId) {
+        recordService.deleteAllRecords(memberId);
+        return ResponseEntity.ok("모든 기록이 삭제되었습니다.");
+    }
 }

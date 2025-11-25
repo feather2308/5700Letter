@@ -103,4 +103,11 @@ public class RecordService {
                 .map(RecordResponse::new)
                 .collect(Collectors.toList());
     }
+
+    // [추가] 특정 멤버의 모든 기록 삭제 (설정 > 데이터 초기화용)
+    public void deleteAllRecords(Long memberId) {
+        // DailyRecord를 지우면 연결된 Advice도 Cascade 설정 덕분에 같이 지워짐
+        List<DailyRecord> records = recordRepository.findAllByMemberIdOrderByRecordDateDesc(memberId);
+        recordRepository.deleteAll(records);
+    }
 }

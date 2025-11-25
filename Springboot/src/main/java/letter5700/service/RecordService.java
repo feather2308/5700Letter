@@ -29,15 +29,19 @@ public class RecordService {
     private final RagService ragService;
 
     public Long saveRecord(RecordRequest request) {
-        // 1. 사용자 조회
+        // 0. 사용자 조회
         Member member = memberRepository.findById(request.getMemberId())
                 .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 회원입니다."));
+
+        // [변경] 1. 저장 전에 먼저 감정 분석 수행
+        String aiEmotion = geminiService.analyzeEmotion(request.getContent());
+        System.out.println(">>> AI가 분석한 감정: " + aiEmotion);
 
         // 2. 일기(Record) 저장
         DailyRecord record = new DailyRecord(
                 member,
                 request.getContent(),
-                request.getEmotion(),
+                aiEmotion, // request.getEmotion() 대신 aiEmotion 사용
                 LocalDate.now()
         );
         DailyRecord savedRecord = recordRepository.save(record);

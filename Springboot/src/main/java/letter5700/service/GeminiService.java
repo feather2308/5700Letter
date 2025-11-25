@@ -56,6 +56,28 @@ public class GeminiService {
         }
     }
 
+    // [추가] 텍스트의 감정을 단어 하나로 분석하는 메서드
+    public String analyzeEmotion(String text) {
+        try {
+            String prompt = """
+                다음 일기를 읽고, 작성자의 감정을 가장 잘 나타내는 단어를 아래 목록 중에서 딱 하나만 골라 답변해줘.
+                설명이나 다른 말은 절대 하지 말고, 오직 단어 하나만 출력해.
+                
+                [감정 목록]
+                기쁨, 슬픔, 불안, 분노, 평온, 우울, 기대, 후회, 벅참, 피로
+                
+                [일기 내용]
+                %s
+                """.formatted(text);
+
+            // 분석은 짧고 빠르면 되니 flash 모델 사용
+            return getAdvice(prompt).trim(); // 기존 getAdvice 메서드 재활용 (또는 별도 호출)
+
+        } catch (Exception e) {
+            return "평온"; // 에러 시 기본값
+        }
+    }
+
     // [추가] 텍스트 -> 벡터 변환 메서드
     public List<Float> createEmbedding(String text) {
         try {

@@ -28,6 +28,15 @@ class _HistoryScreenState extends State<HistoryScreen> {
     });
   }
 
+  String _formatDate(String dateString) {
+    try {
+      DateTime date = DateTime.parse(dateString);
+      return DateFormat('yyyy-MM-dd HH:mm').format(date);
+    } catch (e) {
+      return "-";
+    }
+  }
+
   // 상세 조언 보기 팝업
   void _showDetailDialog(Record record) {
     showDialog(
@@ -40,6 +49,12 @@ class _HistoryScreenState extends State<HistoryScreen> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
+                // 팝업 안에도 날짜 상세 표시
+                Text(
+                  _formatDate(record.date),
+                  style: const TextStyle(color: Colors.grey, fontSize: 13),
+                ),
+                const SizedBox(height: 10),
                 const Text("[나의 기록]", style: TextStyle(fontWeight: FontWeight.bold, color: Colors.grey)),
                 Text(record.content),
                 const Divider(height: 30),
@@ -67,34 +82,30 @@ class _HistoryScreenState extends State<HistoryScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-      title: const Text("지난 감정들"), // 예: "기록 작성", "히스토리", "설정"
-      centerTitle: true,
-      automaticallyImplyLeading: false, // [중요] 좌상단 기본 화살표 제거
-      actions: [
-        IconButton(
-          icon: const Icon(Icons.close, size: 28), // 톱니바퀴 위치에 '닫기' 아이콘 배치
-          onPressed: () => Navigator.pop(context), // 누르면 홈으로 내려감
-        ),
-        const SizedBox(width: 10),
-      ],
-    ),
+        title: const Text("지난 기록들"),
+        centerTitle: true,
+        automaticallyImplyLeading: false, // 기본 뒤로가기 제거
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.close, size: 28),
+            onPressed: () => Navigator.pop(context),
+          ),
+          const SizedBox(width: 10),
+        ],
+      ),
       body: FutureBuilder<List<Record>>(
         future: _recordsFuture,
         builder: (context, snapshot) {
-          // 1. 로딩 중
           if (snapshot.connectionState == ConnectionState.waiting) {
             return const Center(child: CircularProgressIndicator());
           }
-          // 2. 에러 발생
           if (snapshot.hasError) {
             return Center(child: Text("오류가 발생했습니다.\n${snapshot.error}"));
           }
-          // 3. 데이터 없음
           if (!snapshot.hasData || snapshot.data!.isEmpty) {
             return const Center(child: Text("아직 작성된 기록이 없습니다."));
           }
 
-          // 4. 데이터 있음 (리스트 출력)
           final records = snapshot.data!;
           return RefreshIndicator(
             onRefresh: _refreshRecords,
@@ -104,29 +115,41 @@ class _HistoryScreenState extends State<HistoryScreen> {
               separatorBuilder: (context, index) => const SizedBox(height: 12),
               itemBuilder: (context, index) {
                 final record = records[index];
-                // 날짜 포맷 (예: 2024.11.26) - intl 패키지가 없으면 record.date.toString() 사용
-                // 여기서는 간단히 문자열 처리로 날짜만 자름
-                String dateStr = record.id.toString(); // 임시 ID 표시 (실제 날짜 필드가 있다면 교체)
-                
+
                 return Card(
                   elevation: 2,
                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                   child: ListTile(
-                    contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+                    contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
                     leading: CircleAvatar(
                       backgroundColor: Colors.amber[100],
                       child: const Icon(Icons.book, color: Colors.brown),
                     ),
-                    title: Text(
-                      record.emotion.isEmpty ? "무제" : record.emotion, // 감정이 제목
-                      style: const TextStyle(fontWeight: FontWeight.bold),
+                    title: Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Text(
+                          record.emotion.isEmpty ? "무제" : record.emotion,
+                          style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                        ),
+                        Text(
+                          _formatDate(record.date),
+                          style: const TextStyle(fontSize: 12, color: Colors.grey),
+                        ),
+                      ],
                     ),
-                    subtitle: Text(
-                      record.content,
-                      maxLines: 1, // 한 줄만 미리보기
-                      overflow: TextOverflow.ellipsis,
+                    subtitle: Padding(
+                      padding: const EdgeInsets.only(top: 4),
+                      child: Text(
+                        record.content,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: const TextStyle(color: Colors.black54),
+                      ),
                     ),
-                    trailing: const Icon(Icons.arrow_forward_ios, size: 16, color: Colors.grey),
+                    // [복구] 화살표 아이콘 다시 추가
+                    trailing: const Icon(Icons.arrow_forward_ios, size: 14, color: Colors.grey),
+
                     onTap: () => _showDetailDialog(record),
                   ),
                 );

@@ -8,13 +8,13 @@ import letter5700.dto.RecordRequest;
 import letter5700.repository.AdviceRepository;
 import letter5700.repository.DailyRecordRepository;
 import letter5700.repository.MemberRepository;
-import io.qdrant.client.grpc.Points; // ScoredPoint import
+import io.qdrant.client.grpc.Points;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import org.springframework.scheduling.annotation.Async; // import 추가
+import org.springframework.scheduling.annotation.Async;
 
-import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -44,7 +44,7 @@ public class RecordService {
                 member,
                 request.getContent(),
                 aiEmotion, // request.getEmotion() 대신 aiEmotion 사용
-                LocalDate.now()
+                LocalDateTime.now()
         );
         DailyRecord savedRecord = recordRepository.save(record);
 

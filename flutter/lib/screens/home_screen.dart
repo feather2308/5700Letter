@@ -5,6 +5,7 @@ import '../models/record.dart';
 import 'write_screen.dart';
 import 'history_screen.dart';
 import 'settings_screen.dart';
+import 'package:intl/intl.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -21,6 +22,17 @@ class _HomeScreenState extends State<HomeScreen> {
   void initState() {
     super.initState();
     _todayRecordFuture = _fetchTodayRecord();
+  }
+
+  String _formatDate(String dateString) {
+    try {
+      // 1. 서버가 준 문자열을 날짜 객체로 변환
+      DateTime date = DateTime.parse(dateString);
+      // 2. 원하는 포맷으로 변경 (예: 11월 26일 14:30)
+      return DateFormat('yyyy-MM-dd HH:mm').format(date);
+    } catch (e) {
+      return dateString; // 에러나면 그냥 원본 출력
+    }
   }
 
   Future<Record?> _fetchTodayRecord() async {
@@ -285,7 +297,7 @@ class _HomeScreenState extends State<HomeScreen> {
           child: Column(
             children: [
               Text(
-                record.date,
+                _formatDate(record.date),
                 style: const TextStyle(color: Colors.grey, fontSize: 13),
               ),
               const SizedBox(height: 15),

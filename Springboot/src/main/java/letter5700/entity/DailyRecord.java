@@ -6,6 +6,7 @@ import lombok.NoArgsConstructor;
 import lombok.Setter;
 
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 
 @Entity
 @Getter @Setter
@@ -29,14 +30,14 @@ public class DailyRecord {
     private String emotion;
 
     // 기록 날짜
-    private LocalDate recordDate;
+    private LocalDateTime recordDate;
 
     // 이 기록에 대해 생성된 AI 조언 (1:1 관계)
     @OneToOne(mappedBy = "dailyRecord", cascade = CascadeType.ALL)
     private Advice advice;
 
     // 생성자
-    public DailyRecord(Member member, String content, String emotion, LocalDate recordDate) {
+    public DailyRecord(Member member, String content, String emotion, LocalDateTime recordDate) {
         this.member = member;
         this.content = content;
         this.emotion = emotion;

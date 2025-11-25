@@ -1,0 +1,39 @@
+version: '3.8'
+
+services:
+  # 1. 관계형 데이터베이스 (PostgreSQL)
+  # 사용자 정보, 일기 기록, 생성된 조언 등을 저장 [cite: 112]
+  postgres:
+    image: postgres:15
+    container_name: 5700letter-db
+    environment:
+      POSTGRES_DB: 5700letter
+      POSTGRES_USER: user
+      POSTGRES_PASSWORD: password
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - 5700-net
+
+  # 2. 벡터 데이터베이스 (Qdrant)
+  # 조언 지식 문서 및 임베딩 벡터 저장 [cite: 67, 101]
+  qdrant:
+    image: qdrant/qdrant:latest
+    container_name: 5700letter-qdrant
+    ports:
+      - "6333:6333" # API Port
+      - "6334:6334" # GRPC Port
+    volumes:
+      - qdrant_data:/qdrant/storage
+    networks:
+      - 5700-net
+
+networks:
+  5700-net:
+    driver: bridge
+
+volumes:
+  postgres_data:
+  qdrant_data:

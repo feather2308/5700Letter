@@ -39,11 +39,8 @@ class _WriteScreenState extends State<WriteScreen> {
       }
 
       // 2. 글 + 토큰 같이 전송
-      _apiService.saveRecord(_textController.text, "", token!).then((_) {
-        print(">>> 백그라운드 전송 성공");
-      }).catchError((e) {
-        print(">>> 백그라운드 전송 실패: $e");
-      });
+      _apiService.saveRecord(_textController.text, "", token!)
+            .timeout(const Duration(seconds: 10));
       
       if (!mounted) return;
 

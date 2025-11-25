@@ -1,17 +1,20 @@
 package letter5700.service;
 
-import letter5700.entity.Advice; // import 추가
-import letter5700.repository.AdviceRepository; // import 추가 (아래 3번에서 만들 예정)
+import letter5700.entity.Advice;
 import letter5700.entity.DailyRecord;
 import letter5700.entity.Member;
 import letter5700.dto.RecordRequest;
+import letter5700.repository.AdviceRepository;
 import letter5700.repository.DailyRecordRepository;
 import letter5700.repository.MemberRepository;
+import io.qdrant.client.grpc.Points; // ScoredPoint import
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
+import java.util.List;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -20,8 +23,8 @@ public class RecordService {
 
     private final DailyRecordRepository recordRepository;
     private final MemberRepository memberRepository;
-    private final AdviceRepository adviceRepository; // [추가] 조언 저장소
-    private final GeminiService geminiService;       // [추가] AI 서비스
+    private final AdviceRepository adviceRepository;
+    private final GeminiService geminiService;
     private final RagService ragService;
 
     public Long saveRecord(RecordRequest request) {
@@ -38,24 +41,40 @@ public class RecordService {
         );
         DailyRecord savedRecord = recordRepository.save(record);
 
-        // 3. [RAG 적용] 문맥 검색
-        String similarWisdom = ragService.searchSimilarAdvice(request.getContent());
+        // ---------------------------------------------------------
+        // [RAG 핵심 로직]
 
-        // 4. [프롬프트 강화] 검색된 지식을 포함하여 AI 요청
-        // (기존 geminiService.getAdvice 메서드 파라미터를 수정해야 함. 아래 참고)
+        // 3. 사용자 일기 내용을 벡터로 변환 (Gemini 이용)
+        List<Float> queryVector = geminiService.createEmbedding(request.getContent());
+
+        // 4. Qdrant에서 유사한 지식 검색 (Top 3)
+        List<Points.ScoredPoint> searchResults = ragService.search(queryVector, 3);
+
+        // 5. 검색된 지식들을 하나의 문자열로 합치기
+        // (ScoredPoint 객체에서 'content'라는 이름의 payload를 꺼내서 합침)
+        String knowledgeContext = searchResults.stream()
+                .map(point -> point.getPayloadMap().get("content").getStringValue())
+                .collect(Collectors.joining("\n- "));
+
+        // 6. 프롬프트 구성 (검색된 지식 + 사용자 일기)
         String finalPrompt = String.format("""
-            [참고할 지혜]
-            %s
+            당신은 심리 상담 전문가이자 따뜻한 조언자입니다.
+            아래 '참고 지식'을 바탕으로, 사용자의 일기에 대해 5700자 내외의 깊이 있는 편지를 써주세요.
+            
+            [참고 지식 (DB 검색 결과)]
+            - %s
             
             [사용자 일기]
             %s
-            """, similarWisdom, request.getContent());
+            """, knowledgeContext, request.getContent());
 
-        // 3. [추가] AI 조언 생성 요청 (비동기로 처리하면 좋지만, 일단 동기로 구현)
-        String aiContent = geminiService.getAdvice(finalPrompt);
+        // 7. Gemini에게 최종 요청 (조언 생성)
+        String aiAdvice = geminiService.getAdvice(finalPrompt);
 
-        // 4. [추가] 조언(Advice) DB 저장
-        Advice advice = new Advice(savedRecord, aiContent);
+        // ---------------------------------------------------------
+
+        // 8. 생성된 조언을 DB에 저장
+        Advice advice = new Advice(savedRecord, aiAdvice);
         adviceRepository.save(advice);
 
         return savedRecord.getId();

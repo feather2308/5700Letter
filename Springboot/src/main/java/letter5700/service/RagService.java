@@ -33,6 +33,7 @@ public class RagService {
 
     // Qdrant 클라이언트 인스턴스
     private QdrantClient qdrantClient;
+    private final GeminiService geminiService;
 
     // 컬렉션 이름, 벡터 이름, 벡터 차원 정의
     private final String COLLECTION = "advice_knowledge";
@@ -90,6 +91,31 @@ public class RagService {
         }
     }
 
+    // [추가] 지식 데이터 초기화 메서드
+    public void initKnowledgeBase() {
+        System.out.println(">>> RAG 데이터 주입 시작...");
+
+        String[] knowledgeTexts = {
+                "불안은 통제할 수 없는 미래를 통제하려는 마음에서 온다. 현재에 집중하라.",
+                "진정한 휴식은 멈춤이 아니라, 나를 돌보는 적극적인 행위이다.",
+                "슬픔을 억누르면 엉뚱한 곳에서 터진다. 충분히 울어야 비로소 웃을 수 있다."
+        };
+
+        for (String text : knowledgeTexts) {
+            try {
+                // 1. 텍스트 -> 임베딩 변환 (Gemini 이용)
+                List<Float> vector = geminiService.createEmbedding(text);
+
+                // 2. Qdrant 저장 (자기 자신의 메서드 호출)
+                upsert(UUID.randomUUID(), vector, Map.of("content", text));
+
+            } catch (Exception e) {
+                System.err.println("데이터 주입 중 오류 발생 (" + text + "): " + e.getMessage());
+            }
+        }
+        System.out.println(">>> RAG 데이터 주입 완료! (" + knowledgeTexts.length + "건)");
+    }
+
     /**
      * Point upsert
      * - payload를 JsonWithInt 형태로 변환
@@ -135,15 +161,12 @@ public class RagService {
      * - SearchPoints 요청 생성(setCollectionName, addVectors, setLimit, setWithPayload)
      * - Qdrant searchAsync 호출 후 결과 반환
      */
-    public List<ScoredPoint> search(float[] queryVector, int limit) {
+    public List<ScoredPoint> search(List<Float> queryVector, int limit) {
         try {
-            // query vector → List<Float> 변환
-            List<Float> queryVectorList = floatArrayToList(queryVector);
-
             // SearchPoints 요청 생성
             SearchPoints searchRequest = SearchPoints.newBuilder()
                     .setCollectionName(COLLECTION)
-                    .addAllVector(queryVectorList)
+                    .addAllVector(queryVector)
                     .setLimit(limit)
                     .setWithPayload(Points.WithPayloadSelector.newBuilder()
                             .setEnable(true)

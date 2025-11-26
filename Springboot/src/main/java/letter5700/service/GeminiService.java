@@ -72,13 +72,6 @@ public class GeminiService {
 
             // 분석은 짧고 빠르면 되니 flash 모델 사용
             return getAdvice(prompt).trim(); // 기존 getAdvice 메서드 재활용 (또는 별도 호출)
-
-            // [이 코드가 필수!] 10글자 넘어가면 강제로 자르기
-            if (result.length() > 10) {
-                return result.substring(0, 10);
-            }
-            return result;
-
         } catch (Exception e) {
             return "평온"; // 에러 시 기본값
         }

@@ -1,6 +1,6 @@
 import 'dart:async';
 import 'package:firebase_messaging/firebase_messaging.dart';
-import 'package:flutter_local_notifications/flutter_local_notifications.dart';
+import 'package:flutter_local_notifications_plus/flutter_local_notifications_plus.dart';
 import 'package:timezone/data/latest.dart' as tz;
 import 'package:timezone/timezone.dart' as tz;
 
@@ -29,61 +29,52 @@ class NotificationService {
       requestAlertPermission: true,
       requestBadgePermission: true,
       requestSoundPermission: true,
-
-      // 알림 클릭 시 콜백
-      onDidReceiveLocalNotification: onDidReceiveLocalNotification,
     );
 
-    // ---- 공통 ----
+    // ---- 공통 설정 ----
     final InitializationSettings initSettings = InitializationSettings(
       android: androidInit,
       iOS: iosInit,
     );
 
+    // ---- 알림 초기화 ----
     await notifications.initialize(
       initSettings,
-      onDidReceiveNotificationResponse: (details) {
-        print(">>> [알림 클릭] ${details.payload}");
+      onDidReceiveNotificationResponse: (resp) {
+        print(">>> 알림 클릭됨: ${resp.payload}");
       },
     );
 
-    // Android 13+ 알림 권한 요청
-    await requestNotificationPermission();
+    // Android 13+ 권한 요청
+    await _requestAndroidNotificationPermission();
 
-    // Firebase 메시지 권한
+    // FCM 권한
     await FirebaseMessaging.instance.requestPermission(
       alert: true,
       badge: true,
       sound: true,
     );
 
-    // FCM 포그라운드 수신
-    FirebaseMessaging.onMessage.listen((message) {
-      print('>>> FCM 포그라운드 수신: ${message.notification?.title}');
+    // FCM - 포그라운드 수신
+    FirebaseMessaging.onMessage.listen((RemoteMessage message) {
+      print(">>> [FCM] 포그라운드 수신: ${message.notification?.title}");
       if (message.notification != null) {
-        showNotification(message);
+        showFcmNotification(message);
         _refreshStreamController.add(null);
       }
     });
   }
 
-  // Android 13 권한 요청
-  Future<void> requestNotificationPermission() async {
-    final androidPlugin = notifications
-        .resolvePlatformSpecificImplementation<
+  // Android 13+ 권한 요청
+  Future<void> _requestAndroidNotificationPermission() async {
+    final android = notifications.resolvePlatformSpecificImplementation<
         AndroidFlutterLocalNotificationsPlugin>();
 
-    await androidPlugin?.requestNotificationsPermission();
+    await android?.requestNotificationsPermission();
   }
 
-  // iOS - 포그라운드 알림 표시
-  void onDidReceiveLocalNotification(
-      int id, String? title, String? body, String? payload) {
-    print(">>> [iOS 포그라운드 알림] $title");
-  }
-
-  // FCM 메시지 표시
-  Future<void> showNotification(RemoteMessage message) async {
+  // 포그라운드 FCM 알림 표시
+  Future<void> showFcmNotification(RemoteMessage message) async {
     const AndroidNotificationDetails androidDetails =
     AndroidNotificationDetails(
       'advice_channel_id',
@@ -91,10 +82,9 @@ class NotificationService {
       channelDescription: '조언 도착 알림',
       importance: Importance.max,
       priority: Priority.high,
-      showWhen: true,
     );
 
-    const NotificationDetails platformDetails = NotificationDetails(
+    const NotificationDetails details = NotificationDetails(
       android: androidDetails,
       iOS: DarwinNotificationDetails(),
     );
@@ -103,17 +93,17 @@ class NotificationService {
       message.hashCode,
       message.notification?.title,
       message.notification?.body,
-      platformDetails,
+      details,
       payload: 'fcm',
     );
   }
 
-  // 매일 알림
+  // 매일 알림 예약
   Future<void> scheduleDailyNotification(int hour, int minute) async {
     await cancelDailyNotification();
 
     final now = tz.TZDateTime.now(tz.local);
-    var scheduledDate = tz.TZDateTime(
+    var schedule = tz.TZDateTime(
       tz.local,
       now.year,
       now.month,
@@ -122,30 +112,30 @@ class NotificationService {
       minute,
     );
 
-    if (scheduledDate.isBefore(now)) {
-      scheduledDate = scheduledDate.add(const Duration(days: 1));
+    if (schedule.isBefore(now)) {
+      schedule = schedule.add(const Duration(days: 1));
     }
 
     await notifications.zonedSchedule(
       1,
       '하루를 기록할 시간이에요 🌙',
       '오늘 있었던 일을 5700 Letter에 털어놓으세요.',
-      scheduledDate,
+      schedule,
       const NotificationDetails(
         android: AndroidNotificationDetails(
           'daily_reminder_channel',
-          '일기 작성 알림',
-          channelDescription: '매일 작성 유도 알림',
+          '일기 알림',
+          channelDescription: '매일 일정 시간 알림',
           importance: Importance.max,
           priority: Priority.high,
         ),
         iOS: DarwinNotificationDetails(),
       ),
-      matchDateTimeComponents: DateTimeComponents.time,
-      androidScheduleMode: AndroidScheduleMode.exactAllowWhileIdle,
-      payload: 'daily',
       uiLocalNotificationDateInterpretation:
       UILocalNotificationDateInterpretation.absoluteTime,
+      matchDateTimeComponents: DateTimeComponents.time,
+      androidScheduleMode: AndroidScheduleMode.exactAllowWhileIdle,
+      payload: "daily",
     );
 
     print(">>> 매일 알림 예약됨: $hour:$minute");

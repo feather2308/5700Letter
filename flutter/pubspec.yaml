@@ -39,7 +39,7 @@ dependencies:
   flutter_dotenv: ^6.0.0
   firebase_core: ^4.2.1
   firebase_messaging: ^16.0.4
-  flutter_local_notifications: ^19.5.0
+  flutter_local_notifications_plus: ^17.2.5
   shared_preferences: ^2.5.3
   dio: ^5.9.0
   flutter_secure_storage: ^9.2.4

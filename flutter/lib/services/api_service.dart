@@ -1,28 +1,29 @@
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import '../models/record.dart';
-import 'dio_client.dart';
+import 'dio_client.dart'; // [중요] 우리가 만든 DioClient 임포트
 
 class ApiService {
+  // [중요] 여기서 우리가 만든 DioClient의 dio 인스턴스를 가져와야 합니다!
+  // 이 _dio 안에는 토큰을 자동으로 넣는 'Interceptor'가 들어있습니다.
   final _dio = DioClient().dio;
 
-  // .env에서 가져옴 (예: http://10.0.2.2:8080/api)
   static String get baseUrl => dotenv.env['API_URL'] ?? '';
 
-  // 1. 일기 저장 (POST /records)
-  // 토큰이 있으므로 memberId 불필요
+  // 1. 저장
   Future<Map<String, dynamic>> saveRecord(String content, String emotion, String? fcmToken) async {
     try {
+      // [중요] http.post가 아니라 _dio.post를 써야 토큰이 날아갑니다!
       final response = await _dio.post(
-        "$baseUrl/records", // 경로: /api/records
+        "$baseUrl/records",
         data: {
           "content": content,
-          "emotion": emotion, // (서버에서 무시하거나 초기값으로 쓰임)
+          "emotion": emotion,
           "fcmToken": fcmToken,
         },
       );
 
       if (response.statusCode == 200) {
-        return response.data; // {"message": "...", "recordId": ...}
+        return response.data;
       } else {
         throw Exception("저장 실패: ${response.statusCode}");
       }
@@ -31,7 +32,7 @@ class ApiService {
     }
   }
 
-  // 2. 상세 조회 (GET /records/{id})
+  // 2. 조회
   Future<Record> getRecord(int id) async {
     try {
       final response = await _dio.get("$baseUrl/records/$id");
@@ -46,10 +47,10 @@ class ApiService {
     }
   }
 
-  // 3. 내 기록 목록 조회 (GET /records/member/me)
-  // memberId 파라미터 제거 -> 토큰으로 식별
+  // 3. 목록 조회 (여기서 403 에러가 났었음)
   Future<List<Record>> getMemberRecords() async {
     try {
+      // [중요] _dio.get을 써야 헤더에 'Authorization: Bearer ...'가 붙어서 갑니다.
       final response = await _dio.get("$baseUrl/records/member/me");
 
       if (response.statusCode == 200) {
@@ -59,12 +60,13 @@ class ApiService {
         throw Exception("목록 조회 실패");
       }
     } catch (e) {
+      // 로그 확인용 (403이면 토큰 문제)
+      print("목록 조회 에러: $e");
       throw Exception("목록 조회 실패: $e");
     }
   }
 
-  // 4. 기록 전체 삭제 (DELETE /records/member/me)
-  // memberId 파라미터 제거 -> 토큰으로 식별
+  // 4. 삭제
   Future<void> deleteAllRecords() async {
     try {
       final response = await _dio.delete("$baseUrl/records/member/me");

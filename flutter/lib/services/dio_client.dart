@@ -23,16 +23,21 @@ class DioClient {
           // 1. 저장된 토큰 가져오기
           final token = await UserSecureStorage.getToken();
 
+          // [디버깅 로그] 토큰이 잘 나오는지 확인!
+          print(">>> [Dio] 현재 저장된 토큰: $token");
+
           // 2. 토큰이 있으면 헤더에 추가
           if (token != null) {
             options.headers['Authorization'] = 'Bearer $token';
+            print(">>> [Dio] 헤더 추가 완료: Bearer ${token.substring(0, 10)}..."); // 앞 10자리만 확인
+          } else {
+            print(">>> [Dio] ⚠️ 경고: 토큰이 없습니다! (로그인 안 된 상태)");
           }
 
-          return handler.next(options); // 요청 계속 진행
+          return handler.next(options);
         },
         onError: (DioException e, handler) {
-          // 에러 로깅
-          print("API Error: ${e.message}");
+          print(">>> [Dio] API Error: ${e.message}, Status: ${e.response?.statusCode}");
           return handler.next(e);
         },
       ),

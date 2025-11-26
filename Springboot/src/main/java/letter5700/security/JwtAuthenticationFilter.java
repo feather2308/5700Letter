@@ -43,6 +43,10 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
             authentication.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
             SecurityContextHolder.getContext().setAuthentication(authentication);
+
+            System.out.println(">>> [Filter] 토큰 인증 성공: " + username);
+        } else {
+            System.out.println(">>> [Filter] 토큰이 없거나 유효하지 않음! (Token: " + token + ")");
         }
 
         filterChain.doFilter(request, response);

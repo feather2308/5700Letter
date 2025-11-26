@@ -3,7 +3,6 @@ package letter5700.dto;
 import letter5700.entity.DailyRecord;
 import lombok.Getter;
 
-import java.time.LocalDate;
 import java.time.LocalDateTime;
 
 @Getter

@@ -25,8 +25,10 @@ public class MemberService {
         Member member = memberRepository.findByUsername(username)
                 .orElseThrow(() -> new RuntimeException("로그인 유저 정보가 없습니다."));
 
-        // Entity에 setter가 없다면 update 메서드를 만들어서 사용 권장 (여기선 편의상 가정)
-        // member.updateName(newName);
-        // JPA Dirty Checking으로 자동 저장됨
+        // Setter를 사용하여 이름 변경
+        member.setName(newName);
+
+        // @Transactional 덕분에 변경 감지(Dirty Checking)가 작동하여
+        // 별도의 repository.save(member) 없이도 DB에 자동 업데이트됩니다.
     }
 }

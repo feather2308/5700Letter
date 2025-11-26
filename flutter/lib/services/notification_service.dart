@@ -9,55 +9,80 @@ class NotificationService {
   factory NotificationService() => _instance;
   NotificationService._internal();
 
-  // 새로고침 신호를 위한 스트림 컨트롤러
-  final StreamController<void> _refreshStreamController = StreamController.broadcast();
+  final StreamController<void> _refreshStreamController =
+  StreamController.broadcast();
   Stream<void> get onRefreshNeeded => _refreshStreamController.stream;
 
   final FlutterLocalNotificationsPlugin notifications =
   FlutterLocalNotificationsPlugin();
 
   Future<void> init() async {
-    // 1. Timezone 초기화 (스케줄링에 필수)
     tz.initializeTimeZones();
 
-    // 2. 안드로이드 초기화 설정
+    // ---- Android ----
     const AndroidInitializationSettings androidInit =
     AndroidInitializationSettings('@mipmap/ic_launcher');
 
-    // 3. iOS 초기화 설정
+    // ---- iOS ----
     final DarwinInitializationSettings iosInit =
     DarwinInitializationSettings(
       requestAlertPermission: true,
       requestBadgePermission: true,
       requestSoundPermission: true,
+
+      // 알림 클릭 시 콜백
+      onDidReceiveLocalNotification: onDidReceiveLocalNotification,
     );
 
+    // ---- 공통 ----
     final InitializationSettings initSettings = InitializationSettings(
       android: androidInit,
       iOS: iosInit,
     );
 
-    // 4. 플러그인 초기화
-    await notifications.initialize(initSettings);
+    await notifications.initialize(
+      initSettings,
+      onDidReceiveNotificationResponse: (details) {
+        print(">>> [알림 클릭] ${details.payload}");
+      },
+    );
 
-    // 5. FCM 권한 요청
+    // Android 13+ 알림 권한 요청
+    await requestNotificationPermission();
+
+    // Firebase 메시지 권한
     await FirebaseMessaging.instance.requestPermission(
       alert: true,
       badge: true,
       sound: true,
     );
 
-    // 6. 포그라운드 메시지 리스너
-    FirebaseMessaging.onMessage.listen((RemoteMessage message) {
-      print('>>> 포그라운드 메시지 수신: ${message.notification?.title}');
+    // FCM 포그라운드 수신
+    FirebaseMessaging.onMessage.listen((message) {
+      print('>>> FCM 포그라운드 수신: ${message.notification?.title}');
       if (message.notification != null) {
         showNotification(message);
-        _refreshStreamController.add(null); // 새로고침 신호 발송
+        _refreshStreamController.add(null);
       }
     });
   }
 
-  // 즉시 알림 표시 (FCM 수신 시 사용)
+  // Android 13 권한 요청
+  Future<void> requestNotificationPermission() async {
+    final androidPlugin = notifications
+        .resolvePlatformSpecificImplementation<
+        AndroidFlutterLocalNotificationsPlugin>();
+
+    await androidPlugin?.requestNotificationsPermission();
+  }
+
+  // iOS - 포그라운드 알림 표시
+  void onDidReceiveLocalNotification(
+      int id, String? title, String? body, String? payload) {
+    print(">>> [iOS 포그라운드 알림] $title");
+  }
+
+  // FCM 메시지 표시
   Future<void> showNotification(RemoteMessage message) async {
     const AndroidNotificationDetails androidDetails =
     AndroidNotificationDetails(
@@ -69,26 +94,25 @@ class NotificationService {
       showWhen: true,
     );
 
-    const NotificationDetails platformDetails =
-    NotificationDetails(android: androidDetails, iOS: DarwinNotificationDetails());
+    const NotificationDetails platformDetails = NotificationDetails(
+      android: androidDetails,
+      iOS: DarwinNotificationDetails(),
+    );
 
     await notifications.show(
       message.hashCode,
       message.notification?.title,
       message.notification?.body,
       platformDetails,
+      payload: 'fcm',
     );
   }
 
-  // 매일 정해진 시간에 알림 예약 (최신 API 적용)
+  // 매일 알림
   Future<void> scheduleDailyNotification(int hour, int minute) async {
-    // 기존 예약 취소 (중복 방지)
     await cancelDailyNotification();
 
-    // 현재 로컬 시간 기준 설정
     final now = tz.TZDateTime.now(tz.local);
-
-    // 예약 시간 생성
     var scheduledDate = tz.TZDateTime(
       tz.local,
       now.year,
@@ -98,13 +122,12 @@ class NotificationService {
       minute,
     );
 
-    // 만약 설정한 시간이 현재보다 이전이라면, 내일로 예약
     if (scheduledDate.isBefore(now)) {
       scheduledDate = scheduledDate.add(const Duration(days: 1));
     }
 
     await notifications.zonedSchedule(
-      1, // ID (매일 알림은 1번 고정)
+      1,
       '하루를 기록할 시간이에요 🌙',
       '오늘 있었던 일을 5700 Letter에 털어놓으세요.',
       scheduledDate,
@@ -118,19 +141,18 @@ class NotificationService {
         ),
         iOS: DarwinNotificationDetails(),
       ),
-      // [핵심] 매일 같은 시간에 반복하도록 설정
       matchDateTimeComponents: DateTimeComponents.time,
-
-      // [중요] 안드로이드 정확한 알람 설정 (Doze 모드 대응)
       androidScheduleMode: AndroidScheduleMode.exactAllowWhileIdle,
+      payload: 'daily',
+      uiLocalNotificationDateInterpretation:
+      UILocalNotificationDateInterpretation.absoluteTime,
     );
 
-    print(">>> 알림 예약 완료: 매일 $hour시 $minute분");
+    print(">>> 매일 알림 예약됨: $hour:$minute");
   }
 
-  // 알림 예약 취소
   Future<void> cancelDailyNotification() async {
     await notifications.cancel(1);
-    print(">>> 알림 예약 취소됨");
+    print(">>> 매일 알림 취소됨");
   }
 }

@@ -1,5 +1,6 @@
 package letter5700.entity;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
 import lombok.*;
 
@@ -18,6 +19,7 @@ public class Member {
 
     // 암호화된 비밀번호
     @Column(nullable = false)
+    @JsonIgnore
     private String password;
 
     // 사용자 이름

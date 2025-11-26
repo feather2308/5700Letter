@@ -25,7 +25,7 @@ class _HistoryScreenState extends State<HistoryScreen> with WidgetsBindingObserv
     WidgetsBinding.instance.addObserver(this);
 
     // 2. 초기 데이터 로드
-    _recordsFuture = _apiService.getMemberRecords(1);
+    _recordsFuture = _apiService.getMemberRecords();
 
     // 3. (앱 켜져있을 때) 알림 오면 실시간 새로고침
     _refreshSubscription = NotificationService().onRefreshNeeded.listen((_) {
@@ -54,7 +54,7 @@ class _HistoryScreenState extends State<HistoryScreen> with WidgetsBindingObserv
 
   Future<void> _refreshRecords() async {
     setState(() {
-      _recordsFuture = _apiService.getMemberRecords(1);
+      _recordsFuture = _apiService.getMemberRecords();
     });
   }
 

@@ -50,7 +50,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
 
   Future<Record?> _fetchTodayRecord() async {
     try {
-      List<Record> records = await _apiService.getMemberRecords(1);
+      List<Record> records = await _apiService.getMemberRecords();
       if (records.isNotEmpty) return records.first;
       return null;
     } catch (e) {

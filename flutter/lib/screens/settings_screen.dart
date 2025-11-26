@@ -1,7 +1,11 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import '../providers/auth_provider.dart';
+import '../services/dio_client.dart';
 import '../services/api_service.dart';
 import '../services/notification_service.dart';
+import '../models/user.dart';
 
 class SettingsScreen extends StatefulWidget {
   const SettingsScreen({super.key});
@@ -11,16 +15,36 @@ class SettingsScreen extends StatefulWidget {
 }
 
 class _SettingsScreenState extends State<SettingsScreen> {
-  bool _isNotificationEnabled = true; // 기본값 ON
-  TimeOfDay _notificationTime = const TimeOfDay(hour: 21, minute: 0); // 기본값 21:00
+  final _dio = DioClient().dio;
+  User? _user;
+  bool _isLoading = true;
+
+  // 알림 설정
+  bool _isNotificationEnabled = true;
+  TimeOfDay _notificationTime = const TimeOfDay(hour: 21, minute: 0);
 
   @override
   void initState() {
     super.initState();
-    _loadSettings(); // 저장된 설정 불러오기
+    _fetchMyInfo();
+    _loadSettings();
   }
 
-  // 설정 불러오기
+  // 내 정보 가져오기
+  Future<void> _fetchMyInfo() async {
+    try {
+      final response = await _dio.get('/member/me');
+      setState(() {
+        _user = User.fromJson(response.data);
+        _isLoading = false;
+      });
+    } catch (e) {
+      print('정보 조회 실패: $e');
+      setState(() => _isLoading = false);
+    }
+  }
+
+  // 알림 설정 불러오기
   Future<void> _loadSettings() async {
     final prefs = await SharedPreferences.getInstance();
     setState(() {
@@ -31,6 +55,55 @@ class _SettingsScreenState extends State<SettingsScreen> {
     });
   }
 
+  // 이름 변경 다이얼로그
+  void _showEditProfileDialog() {
+    if (_user == null) return;
+    final nameController = TextEditingController(text: _user!.name);
+
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text("프로필 수정"),
+        content: TextField(
+          controller: nameController,
+          decoration: const InputDecoration(labelText: "새로운 이름"),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text("취소"),
+          ),
+          TextButton(
+            onPressed: () async {
+              await _updateName(nameController.text);
+              if (mounted) Navigator.pop(context);
+            },
+            child: const Text("저장"),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // 이름 변경 요청
+  Future<void> _updateName(String newName) async {
+    try {
+      await _dio.put('/member/me', data: {'name': newName});
+      _fetchMyInfo();
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text("이름이 변경되었습니다.")),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text("변경 실패")),
+        );
+      }
+    }
+  }
+
   // 알림 ON/OFF 토글
   Future<void> _toggleNotification(bool value) async {
     setState(() => _isNotificationEnabled = value);
@@ -39,18 +112,16 @@ class _SettingsScreenState extends State<SettingsScreen> {
     await prefs.setBool('isNotificationEnabled', value);
 
     if (value) {
-      // 켜지면 현재 설정된 시간으로 예약
       await NotificationService().scheduleDailyNotification(
-          _notificationTime.hour,
-          _notificationTime.minute
+        _notificationTime.hour,
+        _notificationTime.minute,
       );
     } else {
-      // 꺼지면 예약 취소
       await NotificationService().cancelDailyNotification();
     }
   }
 
-  // 시간 변경
+  // 알림 시간 변경
   Future<void> _pickTime() async {
     final TimeOfDay? picked = await showTimePicker(
       context: context,
@@ -60,22 +131,21 @@ class _SettingsScreenState extends State<SettingsScreen> {
     if (picked != null && picked != _notificationTime) {
       setState(() => _notificationTime = picked);
 
-      // 저장
       final prefs = await SharedPreferences.getInstance();
       await prefs.setInt('notificationHour', picked.hour);
       await prefs.setInt('notificationMinute', picked.minute);
 
-      // 스위치가 켜져 있다면 예약 시간 업데이트
       if (_isNotificationEnabled) {
-        await NotificationService().scheduleDailyNotification(picked.hour, picked.minute);
+        await NotificationService().scheduleDailyNotification(
+          picked.hour,
+          picked.minute,
+        );
       }
     }
   }
 
-  // ... (기존 삭제 관련 코드 생략, 아래 build에 통합됨) ...
-
+  // 데이터 초기화 확인 다이얼로그
   void _showDeleteConfirmDialog(BuildContext context) {
-    // ... (기존 코드 그대로 사용) ...
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
@@ -91,21 +161,34 @@ class _SettingsScreenState extends State<SettingsScreen> {
               Navigator.pop(context);
               try {
                 final apiService = ApiService();
-                await apiService.deleteAllRecords(1);
+                // 토큰으로 자동 인증되므로 파라미터 불필요
+                await apiService.deleteAllRecords();
                 if (context.mounted) {
                   ScaffoldMessenger.of(context).showSnackBar(
                     const SnackBar(content: Text("모든 데이터가 초기화되었습니다.")),
                   );
                 }
               } catch (e) {
-                // ...
+                if (context.mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(content: Text("초기화 실패")),
+                  );
+                }
               }
             },
-            child: const Text("삭제", style: TextStyle(color: Colors.red, fontWeight: FontWeight.bold)),
+            child: const Text(
+              "삭제",
+              style: TextStyle(color: Colors.red, fontWeight: FontWeight.bold),
+            ),
           ),
         ],
       ),
     );
+  }
+
+  // 로그아웃
+  void _logout() {
+    Provider.of<AuthProvider>(context, listen: false).logout();
   }
 
   @override
@@ -123,24 +206,35 @@ class _SettingsScreenState extends State<SettingsScreen> {
           const SizedBox(width: 10),
         ],
       ),
-      body: ListView(
+      body: _isLoading
+          ? const Center(child: CircularProgressIndicator())
+          : ListView(
         children: [
+          // 1. 계정 섹션
           _buildSectionHeader("계정"),
-          const ListTile(
-            leading: Icon(Icons.person, color: Colors.brown),
-            title: Text("내 프로필"),
-            subtitle: Text("강성왕 (203602)"),
-            trailing: Icon(Icons.arrow_forward_ios, size: 16),
+          ListTile(
+            leading: const CircleAvatar(
+              backgroundColor: Colors.brown,
+              child: Icon(Icons.person, color: Colors.white),
+            ),
+            title: Text(
+              _user?.name ?? "알 수 없음",
+              style: const TextStyle(fontWeight: FontWeight.bold),
+            ),
+            subtitle: Text("ID: ${_user?.username}"),
+            trailing: const Icon(Icons.edit, size: 16, color: Colors.brown),
+            onTap: _showEditProfileDialog,
           ),
-          const ListTile(
-            leading: Icon(Icons.logout, color: Colors.grey),
-            title: Text("로그아웃"),
+          ListTile(
+            leading: const Icon(Icons.logout, color: Colors.grey),
+            title: const Text("로그아웃"),
+            onTap: _logout,
           ),
 
           const Divider(),
 
+          // 2. 앱 설정 섹션
           _buildSectionHeader("앱 설정"),
-          // [수정] 스위치와 시간 설정 연결
           SwitchListTile(
             value: _isNotificationEnabled,
             onChanged: _toggleNotification,
@@ -151,15 +245,16 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 : "알림 꺼짐"),
             secondary: const Icon(Icons.notifications, color: Colors.brown),
           ),
-          // [추가] 시간이 켜져 있을 때만 시간 변경 버튼 보이기
           if (_isNotificationEnabled)
             ListTile(
-              leading: const SizedBox(), // 들여쓰기용
-              title: const Text("알림 시간 변경", style: TextStyle(color: Colors.blue)),
+              leading: const SizedBox(width: 40), // 들여쓰기용
+              title: const Text(
+                "알림 시간 변경",
+                style: TextStyle(color: Colors.blue),
+              ),
               trailing: const Icon(Icons.access_time, color: Colors.blue),
               onTap: _pickTime,
             ),
-
           const ListTile(
             leading: Icon(Icons.palette, color: Colors.brown),
             title: Text("테마 설정"),
@@ -169,16 +264,21 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
           const Divider(),
 
+          // 3. 데이터 관리 섹션
           _buildSectionHeader("데이터 관리"),
           ListTile(
             leading: const Icon(Icons.delete_forever, color: Colors.red),
-            title: const Text("데이터 초기화", style: TextStyle(color: Colors.red)),
+            title: const Text(
+              "데이터 초기화",
+              style: TextStyle(color: Colors.red),
+            ),
             subtitle: const Text("모든 일기와 조언 기록을 삭제합니다."),
             onTap: () => _showDeleteConfirmDialog(context),
           ),
 
           const Divider(),
 
+          // 4. 정보 섹션
           _buildSectionHeader("정보"),
           const ListTile(
             leading: Icon(Icons.info_outline, color: Colors.grey),
@@ -200,7 +300,11 @@ class _SettingsScreenState extends State<SettingsScreen> {
       padding: const EdgeInsets.fromLTRB(16, 20, 16, 8),
       child: Text(
         title,
-        style: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: Colors.grey),
+        style: const TextStyle(
+          fontSize: 14,
+          fontWeight: FontWeight.bold,
+          color: Colors.grey,
+        ),
       ),
     );
   }

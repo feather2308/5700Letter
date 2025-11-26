@@ -2,6 +2,7 @@ package letter5700.controller;
 
 import letter5700.entity.Member;
 import letter5700.service.MemberService;
+import lombok.Data;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
@@ -21,5 +22,20 @@ public class MemberController {
     public ResponseEntity<Member> getMyInfo(@AuthenticationPrincipal UserDetails userDetails) {
         Member member = memberService.getMyInfo(userDetails.getUsername());
         return ResponseEntity.ok(member);
+    }
+
+    @Data
+    static class UpdateRequest {
+        private String name;
+    }
+
+    // [추가] 내 정보 수정 API
+    @PutMapping("/me")
+    public ResponseEntity<String> updateMyInfo(
+            @AuthenticationPrincipal UserDetails userDetails,
+            @RequestBody UpdateRequest request) {
+
+        memberService.updateMyInfo(userDetails.getUsername(), request.getName());
+        return ResponseEntity.ok("정보가 수정되었습니다.");
     }
 }

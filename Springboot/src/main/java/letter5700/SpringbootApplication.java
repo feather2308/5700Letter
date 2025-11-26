@@ -4,10 +4,9 @@ import letter5700.entity.Member;
 import letter5700.repository.MemberRepository;
 import letter5700.service.RagService;
 import org.springframework.boot.CommandLineRunner;
-import org.springframework.context.annotation.Bean;
-
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
+import org.springframework.context.annotation.Bean;
 
 @SpringBootApplication
 public class SpringbootApplication {

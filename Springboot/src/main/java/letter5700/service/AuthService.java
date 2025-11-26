@@ -1,7 +1,7 @@
 package letter5700.service;
 
-import letter5700.entity.Member;
 import letter5700.dto.AuthDto;
+import letter5700.entity.Member;
 import letter5700.repository.MemberRepository;
 import letter5700.security.JwtTokenProvider;
 import lombok.RequiredArgsConstructor;
@@ -19,7 +19,7 @@ public class AuthService {
     private final JwtTokenProvider jwtTokenProvider;
 
     // 회원가입
-    public Long signup(AuthDto.SignupRequest request) {
+    public void signup(AuthDto.SignupRequest request) {
         if (memberRepository.existsByUsername(request.getUsername())) {
             throw new RuntimeException("이미 존재하는 아이디입니다.");
         }
@@ -31,7 +31,7 @@ public class AuthService {
                 .role("USER")
                 .build();
 
-        return memberRepository.save(member).getId();
+        memberRepository.save(member);
     }
 
     // 로그인 -> 토큰 반환

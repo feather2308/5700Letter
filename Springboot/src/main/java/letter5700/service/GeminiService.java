@@ -1,7 +1,9 @@
 package letter5700.service;
 
 import com.google.genai.Client;
-import com.google.genai.types.*;
+import com.google.genai.types.ContentEmbedding;
+import com.google.genai.types.EmbedContentResponse;
+import com.google.genai.types.GenerateContentResponse;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 

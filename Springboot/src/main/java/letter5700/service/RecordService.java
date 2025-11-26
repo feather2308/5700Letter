@@ -1,21 +1,20 @@
 package letter5700.service;
 
-import jdk.jfr.Label;
+import io.qdrant.client.grpc.Points;
+import letter5700.dto.RecordRequest;
 import letter5700.dto.RecordResponse;
 import letter5700.entity.Advice;
 import letter5700.entity.DailyRecord;
 import letter5700.entity.Member;
-import letter5700.dto.RecordRequest;
 import letter5700.repository.AdviceRepository;
 import letter5700.repository.DailyRecordRepository;
 import letter5700.repository.MemberRepository;
-import io.qdrant.client.grpc.Points;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Lazy;
+import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import org.springframework.scheduling.annotation.Async;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -37,9 +36,9 @@ public class RecordService {
     @Lazy
     private RecordService self;
 
-    public Long saveRecord(RecordRequest request) {
+    public Long saveRecord(RecordRequest request, String username) {
         // 0. 사용자 조회
-        Member member = memberRepository.findById(request.getMemberId())
+        Member member = memberRepository.findByUsername(username)
                 .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 회원입니다."));
 
         // 2. 일기(Record) 저장
@@ -124,19 +123,23 @@ public class RecordService {
 
     // [추가] 2. 목록 조회 (특정 사용자의 모든 기록)
     @Transactional(readOnly = true)
-    public List<RecordResponse> getMemberRecords(Long memberId) {
+    public List<RecordResponse> getMemberRecords(String username) {
+        Member member = memberRepository.findByUsername(username)
+                .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 회원입니다."));
         // 원래는 MemberRepository에서 records를 가져오거나 별도 쿼리를 짜야 함
         // 편의상 DailyRecordRepository에 메서드가 필요함 (아래 3번 참고)
-        return recordRepository.findAllByMemberIdOrderByRecordDateDesc(memberId)
+        return recordRepository.findAllByMemberIdOrderByRecordDateDesc(member.getId())
                 .stream()
                 .map(RecordResponse::new)
                 .collect(Collectors.toList());
     }
 
     // [추가] 특정 멤버의 모든 기록 삭제 (설정 > 데이터 초기화용)
-    public void deleteAllRecords(Long memberId) {
-        // DailyRecord를 지우면 연결된 Advice도 Cascade 설정 덕분에 같이 지워짐
-        List<DailyRecord> records = recordRepository.findAllByMemberIdOrderByRecordDateDesc(memberId);
+    public void deleteAllRecords(String username) {
+        Member member = memberRepository.findByUsername(username)
+                .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 회원입니다."));
+
+        List<DailyRecord> records = recordRepository.findAllByMemberIdOrderByRecordDateDesc(member.getId());
         recordRepository.deleteAll(records);
     }
 }

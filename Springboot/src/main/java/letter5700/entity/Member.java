@@ -1,45 +1,37 @@
 package letter5700.entity;
 
 import jakarta.persistence.*;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
-import lombok.Setter;
-
-import java.time.LocalDateTime;
-import java.util.ArrayList;
-import java.util.List;
+import lombok.*;
 
 @Entity
 @Getter @Setter
-@NoArgsConstructor
+@NoArgsConstructor(access = AccessLevel.PROTECTED)
 public class Member {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    // 이메일 (로그인 ID 역할)
+    // 로그인 아이디 (중복 불가)
     @Column(nullable = false, unique = true)
-    private String email;
+    private String username;
 
-    // 비밀번호 (암호화 저장 예정)
+    // 암호화된 비밀번호
+    @Column(nullable = false)
     private String password;
 
-    // 닉네임 (개인화된 호칭용)
-    private String nickname;
+    // 사용자 이름
+    @Column(nullable = false)
+    private String name;
 
-    // 가입일
-    private LocalDateTime createdAt;
+    // 역할 (USER, ADMIN 등 - 추후 확장을 위해 추가해두면 좋음)
+    private String role;
 
-    // 사용자가 작성한 기록들과의 관계 설정
-    @OneToMany(mappedBy = "member")
-    private List<DailyRecord> records = new ArrayList<>();
-
-    // 생성자 편의 메서드
-    public Member(String email, String password, String nickname) {
-        this.email = email;
+    @Builder
+    public Member(String username, String password, String name, String role) {
+        this.username = username;
         this.password = password;
-        this.nickname = nickname;
-        this.createdAt = LocalDateTime.now();
+        this.name = name;
+        this.role = role;
     }
 }

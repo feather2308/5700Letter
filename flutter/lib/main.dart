@@ -4,10 +4,11 @@ import 'package:provider/provider.dart';
 import 'providers/auth_provider.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
-import 'package:flutter/material.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'services/notification_service.dart';
 import 'screens/home_screen.dart';
+import 'screens/login_screen.dart';
+import 'screens/splash_screen.dart';
 
 @pragma('vm:entry-point')
 Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
@@ -43,19 +44,26 @@ class MyApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return MaterialApp(
       title: '5700 Letter',
-      debugShowCheckedModeBanner: false,
-      theme: ThemeData(
-        primaryColor: const Color(0xFFF7E600),
-        scaffoldBackgroundColor: const Color(0xFFFFF9C4), // 연한 노랑 배경
-        appBarTheme: const AppBarTheme(
-          backgroundColor: Colors.transparent,
-          elevation: 0,
-          titleTextStyle: TextStyle(color: Colors.black, fontWeight: FontWeight.bold, fontSize: 20),
-          iconTheme: IconThemeData(color: Colors.black),
-        ),
+      theme: ThemeData(primarySwatch: Colors.amber),
+      // [핵심] Provider의 상태에 따라 첫 화면 결정
+      home: Consumer<AuthProvider>(
+        builder: (context, auth, child) {
+          // 1. 앱이 막 켜져서 토큰 확인 중일 때 -> 스플래시 화면
+          // (AuthProvider에 isChecking 변수를 추가하면 더 정교하지만, 여기선 간단히 처리)
+          return FutureBuilder(
+            future: auth.checkLoginStatus(), // 자동 로그인 체크 함수 호출
+            builder: (context, snapshot) {
+              // 로딩 중이면 스플래시 화면 표시
+              if (snapshot.connectionState == ConnectionState.waiting) {
+                return const SplashScreen();
+              }
+
+              // 체크 끝남 -> 로그인 되어있으면 홈, 아니면 로그인 화면
+              return auth.isAuthenticated ? const HomeScreen() : const LoginScreen();
+            },
+          );
+        },
       ),
-      // [변경] MainScreen 대신 HomeScreen을 바로 시작
-      home: const HomeScreen(),
     );
   }
 }

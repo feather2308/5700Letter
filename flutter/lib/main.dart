@@ -1,5 +1,7 @@
 // lib/main.dart
-
+import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+import 'providers/auth_provider.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/material.dart';
@@ -23,7 +25,15 @@ void main() async {
   // 3. 알림 서비스 초기화 (포그라운드 수신 대기 시작)
   await NotificationService().init();
 
-  runApp(const MyApp());
+  runApp(
+    MultiProvider(
+      providers: [
+        // 앱 전체에서 AuthProvider를 사용할 수 있게 등록
+        ChangeNotifierProvider(create: (_) => AuthProvider()),
+      ],
+      child: const MyApp(),
+    ),
+  );
 }
 
 class MyApp extends StatelessWidget {

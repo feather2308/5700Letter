@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'package:dio/dio.dart'; // 에러 처리를 위해 필요
+import 'package:dio/dio.dart';
 import '../providers/auth_provider.dart';
-import '../services/dio_client.dart'; // API 호출용 (직접 호출 시)
+import '../services/dio_client.dart';
 import 'signup_screen.dart';
 
 class LoginScreen extends StatefulWidget {
@@ -15,71 +15,174 @@ class LoginScreen extends StatefulWidget {
 class _LoginScreenState extends State<LoginScreen> {
   final _usernameController = TextEditingController();
   final _passwordController = TextEditingController();
-  final _dio = DioClient().dio; // 로그인 요청은 Provider 내부 로직 또는 여기서 직접 호출
+  final _dio = DioClient().dio;
+
+  // 로딩 상태 변수 추가
+  bool _isLoading = false;
 
   void _tryLogin() async {
     final username = _usernameController.text;
     final password = _passwordController.text;
 
-    if (username.isEmpty || password.isEmpty) return;
+    if (username.isEmpty || password.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('아이디와 비밀번호를 입력해주세요.')),
+      );
+      return;
+    }
+
+    // 키보드 내리기
+    FocusScope.of(context).unfocus();
+
+    setState(() => _isLoading = true);
 
     try {
-      // 1. 백엔드 로그인 API 호출
       final response = await _dio.post('/auth/login', data: {
         'username': username,
         'password': password,
       });
 
-      // 2. 응답에서 토큰 추출
       final token = response.data['token'];
 
-      // 3. Provider를 통해 로그인 상태 업데이트 (화면이 자동으로 홈으로 바뀜)
       if (mounted) {
         await Provider.of<AuthProvider>(context, listen: false).login(token);
       }
     } on DioException catch (e) {
-      // 에러 처리 (알림창 등)
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('로그인 실패: 아이디 또는 비밀번호를 확인하세요.')),
-      );
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('로그인 실패: 아이디 또는 비밀번호를 확인하세요.'),
+            backgroundColor: Colors.redAccent,
+          ),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _isLoading = false);
     }
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: Padding(
-        padding: const EdgeInsets.all(16.0),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            const Text("로그인", style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold)),
-            const SizedBox(height: 30),
-            TextField(
-              controller: _usernameController,
-              decoration: const InputDecoration(labelText: "아이디"),
-            ),
-            TextField(
-              controller: _passwordController,
-              decoration: const InputDecoration(labelText: "비밀번호"),
-              obscureText: true,
-            ),
-            const SizedBox(height: 20),
-            ElevatedButton(
-              onPressed: _tryLogin,
-              child: const Text("로그인"),
-            ),
-            TextButton(
-              onPressed: () {
-                // 회원가입 화면으로 이동
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(builder: (context) => const SignupScreen()),
-                );
-              },
-              child: const Text("계정이 없으신가요? 회원가입"),
-            )
-          ],
+      backgroundColor: const Color(0xFFFFF9C4), // 앱 테마 배경색 (연한 노랑)
+      body: Center(
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.symmetric(horizontal: 30.0),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              // 1. 로고 및 타이틀 섹션
+              const Icon(Icons.mail_outline, size: 80, color: Colors.brown),
+              const SizedBox(height: 10),
+              const Text(
+                "5700 LETTER",
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  fontSize: 32,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.brown,
+                  fontFamily: 'Serif',
+                  letterSpacing: 1.5,
+                ),
+              ),
+              const SizedBox(height: 8),
+              Text(
+                "당신의 마음을 위한 긴 편지",
+                textAlign: TextAlign.center,
+                style: TextStyle(fontSize: 16, color: Colors.brown.withOpacity(0.7)),
+              ),
+              const SizedBox(height: 60),
+
+              // 2. 입력 필드 섹션
+              TextField(
+                controller: _usernameController,
+                decoration: InputDecoration(
+                  labelText: "아이디",
+                  prefixIcon: const Icon(Icons.person_outline, color: Colors.brown),
+                  filled: true,
+                  fillColor: Colors.white,
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    borderSide: BorderSide.none,
+                  ),
+                  contentPadding: const EdgeInsets.symmetric(vertical: 16),
+                ),
+              ),
+              const SizedBox(height: 16),
+              TextField(
+                controller: _passwordController,
+                obscureText: true,
+                decoration: InputDecoration(
+                  labelText: "비밀번호",
+                  prefixIcon: const Icon(Icons.lock_outline, color: Colors.brown),
+                  filled: true,
+                  fillColor: Colors.white,
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    borderSide: BorderSide.none,
+                  ),
+                  contentPadding: const EdgeInsets.symmetric(vertical: 16),
+                ),
+              ),
+              const SizedBox(height: 30),
+
+              // 3. 버튼 섹션
+              SizedBox(
+                height: 52,
+                child: ElevatedButton(
+                  onPressed: _isLoading ? null : _tryLogin,
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.brown,
+                    foregroundColor: Colors.white,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    elevation: 3,
+                  ),
+                  child: _isLoading
+                      ? const SizedBox(
+                    width: 24,
+                    height: 24,
+                    child: CircularProgressIndicator(
+                      color: Colors.white,
+                      strokeWidth: 2.5,
+                    ),
+                  )
+                      : const Text(
+                    "로그인",
+                    style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                  ),
+                ),
+              ),
+
+              const SizedBox(height: 24),
+
+              // 4. 회원가입 링크
+              Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  const Text("계정이 없으신가요?", style: TextStyle(color: Colors.black54)),
+                  TextButton(
+                    onPressed: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(builder: (context) => const SignupScreen()),
+                      );
+                    },
+                    child: const Text(
+                      "회원가입",
+                      style: TextStyle(
+                        color: Colors.brown,
+                        fontWeight: FontWeight.bold,
+                        decoration: TextDecoration.underline,
+                      ),
+                    ),
+                  )
+                ],
+              ),
+            ],
+          ),
         ),
       ),
     );

@@ -20,7 +20,7 @@ public class SpringbootApplication {
 	public CommandLineRunner initData(MemberRepository memberRepository) {
 		return args -> {
 			if (memberRepository.count() == 0) {
-				memberRepository.save(new Member("test@test.com", "1234", "테스트유저"));
+				memberRepository.save(new Member("test", "1234", "테스트유저", "Admin"));
 				System.out.println(">>> 테스트용 회원 생성 완료 (ID: 1)");
 			}
 		};

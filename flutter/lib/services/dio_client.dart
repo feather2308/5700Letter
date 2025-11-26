@@ -8,7 +8,8 @@ class DioClient {
   DioClient() {
     _dio = Dio(
       BaseOptions(
-        baseUrl: dotenv.env['API_URL'] ?? 'http://10.0.2.2:8080', // .env 사용 권장
+        // [수정] 기본값에도 /api를 붙여서 경로를 맞춰줍니다.
+        baseUrl: dotenv.env['API_URL'] ?? '',
         connectTimeout: const Duration(seconds: 5),
         receiveTimeout: const Duration(seconds: 3),
         contentType: Headers.jsonContentType,
@@ -30,7 +31,7 @@ class DioClient {
           return handler.next(options); // 요청 계속 진행
         },
         onError: (DioException e, handler) {
-          // 에러 로깅 등을 여기서 처리 가능
+          // 에러 로깅
           print("API Error: ${e.message}");
           return handler.next(e);
         },

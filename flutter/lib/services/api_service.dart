@@ -1,5 +1,3 @@
-// lib/services/api_service.dart
-
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import '../models/record.dart';
 import 'dio_client.dart';
@@ -7,25 +5,24 @@ import 'dio_client.dart';
 class ApiService {
   final _dio = DioClient().dio;
 
-  // [수정] .env에서 가져오기 (없으면 빈 문자열)
+  // .env에서 가져옴 (예: http://10.0.2.2:8080/api)
   static String get baseUrl => dotenv.env['API_URL'] ?? '';
 
-  // 1. 일기 저장 & 조언 요청 (POST)
-  // 토큰으로 memberId 자동 식별
-  Future<Map<String, dynamic>> saveRecord(String content, String emotion, String fcmToken) async {
+  // 1. 일기 저장 (POST /records)
+  // 토큰이 있으므로 memberId 불필요
+  Future<Map<String, dynamic>> saveRecord(String content, String emotion, String? fcmToken) async {
     try {
       final response = await _dio.post(
-        baseUrl,
+        "$baseUrl/records", // 경로: /api/records
         data: {
           "content": content,
-          "emotion": emotion,
+          "emotion": emotion, // (서버에서 무시하거나 초기값으로 쓰임)
           "fcmToken": fcmToken,
         },
       );
 
       if (response.statusCode == 200) {
-        // 백엔드에서 { "message": "...", "recordId": 1 } 형태로 준다고 가정
-        return response.data;
+        return response.data; // {"message": "...", "recordId": ...}
       } else {
         throw Exception("저장 실패: ${response.statusCode}");
       }
@@ -34,11 +31,10 @@ class ApiService {
     }
   }
 
-  // 2. 조회 조회 (GET)
-  // 토큰으로 권한 확인
+  // 2. 상세 조회 (GET /records/{id})
   Future<Record> getRecord(int id) async {
     try {
-      final response = await _dio.get("$baseUrl/$id");
+      final response = await _dio.get("$baseUrl/records/$id");
 
       if (response.statusCode == 200) {
         return Record.fromJson(response.data);
@@ -50,15 +46,14 @@ class ApiService {
     }
   }
 
-  // 3. 내 기록 목록 조회 (GET /api/records/member/me)
-  // 토큰으로 memberId 자동 식별
+  // 3. 내 기록 목록 조회 (GET /records/member/me)
+  // memberId 파라미터 제거 -> 토큰으로 식별
   Future<List<Record>> getMemberRecords() async {
     try {
-      final response = await _dio.get("$baseUrl/member/me");
+      final response = await _dio.get("$baseUrl/records/member/me");
 
       if (response.statusCode == 200) {
         List<dynamic> body = response.data;
-        // JSON 리스트를 Record 객체 리스트로 변환
         return body.map((dynamic item) => Record.fromJson(item)).toList();
       } else {
         throw Exception("목록 조회 실패");
@@ -68,11 +63,11 @@ class ApiService {
     }
   }
 
-  // 4. 기록 전체 삭제 (DELETE)
-  // 토큰으로 memberId 자동 식별
+  // 4. 기록 전체 삭제 (DELETE /records/member/me)
+  // memberId 파라미터 제거 -> 토큰으로 식별
   Future<void> deleteAllRecords() async {
     try {
-      final response = await _dio.delete("$baseUrl/member/me");
+      final response = await _dio.delete("$baseUrl/records/member/me");
 
       if (response.statusCode != 200) {
         throw Exception("삭제 실패");

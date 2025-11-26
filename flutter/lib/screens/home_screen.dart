@@ -1,13 +1,14 @@
-import 'package:flutter/material.dart';
-import 'dart:math';
 import 'dart:async';
+import 'dart:math';
+import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
+import 'dart:ui' as ui;
+import '../models/record.dart';
 import '../services/api_service.dart';
 import '../services/notification_service.dart';
-import '../models/record.dart';
-import 'write_screen.dart';
 import 'history_screen.dart';
 import 'settings_screen.dart';
+import 'write_screen.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -18,6 +19,7 @@ class HomeScreen extends StatefulWidget {
 
 class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
   final ApiService _apiService = ApiService();
+
   late Future<Record?> _todayRecordFuture;
 
   StreamSubscription? _refreshSubscription;
@@ -64,7 +66,6 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
     });
   }
 
-  // [수정] 요청하신 날짜 포맷 적용 (yy.MM.dd HH:mm)
   String _formatDate(String dateString) {
     try {
       DateTime date = DateTime.parse(dateString);
@@ -74,14 +75,13 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
     }
   }
 
-  // 화면 이동 함수
   void _navigateTo(Widget page) {
     Navigator.push(
       context,
       PageRouteBuilder(
         pageBuilder: (context, animation, secondaryAnimation) => page,
         transitionsBuilder: (context, animation, secondaryAnimation, child) {
-          const begin = Offset(0.0, 1.0); // 아래에서 위로
+          const begin = Offset(0.0, 1.0);
           const end = Offset.zero;
           const curve = Curves.easeInOut;
           var tween = Tween(begin: begin, end: end).chain(CurveTween(curve: curve));
@@ -89,7 +89,6 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
         },
       ),
     ).then((_) {
-      // [핵심] 갔다 돌아오면 무조건 실행되는 부분
       print(">>> 홈 화면 복귀: 데이터 새로고침 실행");
       _refresh();
     });
@@ -158,51 +157,55 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
               const SizedBox(width: 10),
             ],
           ),
+          // [핵심 수정] Container는 배경을 위해 Scafold의 Body로 남겨두고,
+          // 그 안에 SafeArea를 넣어 콘텐츠를 안전하게 만듭니다.
           body: Container(
             decoration: BoxDecoration(
               gradient: _getGradient(emotion),
             ),
-            child: Stack(
-              children: [
-                Positioned.fill(
-                  child: Opacity(
-                    opacity: 0.05,
-                    child: CustomPaint(
-                      painter: NoisePainter(),
-                      size: Size.infinite,
+            child: SafeArea( // <--- 여기가 SafeArea 추가 지점
+              child: Stack(
+                children: [
+                  // 1. 노이즈 레이어
+                  Positioned.fill(
+                    child: NoiseOverlay(intensity: 0.05),
+                  ),
+
+                  // 2. 메인 컨텐츠
+                  Positioned.fill(
+                    child: Padding(
+                      // SafeArea가 이미 하단 패딩을 주었으므로, 여기서 추가 패딩은 제거하거나 조정
+                      padding: const EdgeInsets.only(bottom: 80),
+                      child: Center(
+                        child: record == null
+                            ? _buildEmptyView()
+                            : _buildRecentView(record),
+                      ),
                     ),
                   ),
-                ),
-                Positioned.fill(
-                  child: Padding(
-                    padding: const EdgeInsets.only(bottom: 80),
-                    child: Center(
-                      child: record == null
-                          ? _buildEmptyView()
-                          : _buildRecentView(record),
+
+                  // 3. 하단 버튼들 (SafeArea 안에서 bottom: 30은 시스템 UI 위 30픽셀을 의미)
+                  Positioned(
+                    left: 20,
+                    bottom: 30, // [수정] 수동 패딩 제거
+                    child: _buildBottomButton(
+                      icon: Icons.edit,
+                      label: "RECORD",
+                      onTap: () => _navigateTo(const WriteScreen()),
                     ),
                   ),
-                ),
-                Positioned(
-                  left: 20,
-                  bottom: 30,
-                  child: _buildBottomButton(
-                    icon: Icons.edit,
-                    label: "RECORD",
-                    onTap: () => _navigateTo(const WriteScreen()),
+                  Positioned(
+                    right: 20,
+                    bottom: 30, // [수정] 수동 패딩 제거
+                    child: _buildBottomButton(
+                      icon: Icons.history,
+                      label: "HISTORY",
+                      onTap: () => _navigateTo(const HistoryScreen()),
+                    ),
                   ),
-                ),
-                Positioned(
-                  right: 20,
-                  bottom: 30,
-                  child: _buildBottomButton(
-                    icon: Icons.history,
-                    label: "HISTORY",
-                    onTap: () => _navigateTo(const HistoryScreen()),
-                  ),
-                ),
-              ],
-            ),
+                ],
+              ),
+            ), // <--- SafeArea 닫힘
           ),
         );
       },
@@ -331,19 +334,99 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
   }
 }
 
-class NoisePainter extends CustomPainter {
+class NoiseShaderPainter extends CustomPainter {
+  final ui.FragmentShader shader;
+  final double time;
+  final double intensity;
+
+  NoiseShaderPainter({
+    required this.shader,
+    required this.time,
+    required this.intensity,
+  });
+
   @override
   void paint(Canvas canvas, Size size) {
-    final paint = Paint()..color = Colors.black;
-    final random = Random();
-    for (double i = 0; i < size.width; i += 3) {
-      for (double j = 0; j < size.height; j += 3) {
-        if (random.nextBool()) {
-          canvas.drawRect(Rect.fromLTWH(i, j, 1, 1), paint);
-        }
-      }
-    }
+    shader.setFloat(0, size.width);
+    shader.setFloat(1, size.height);
+    shader.setFloat(2, time);
+    shader.setFloat(3, intensity);
+
+    final paint = Paint()..shader = shader;
+
+    canvas.drawRect(Offset.zero & size, paint);
   }
+
+  @override
+  bool shouldRepaint(NoiseShaderPainter oldDelegate) =>
+      oldDelegate.time != time ||
+          oldDelegate.intensity != intensity;
+}
+
+
+class NoiseOverlay extends StatefulWidget {
+  final double intensity;
+
+  const NoiseOverlay({super.key, this.intensity = 0.05});
+
+  @override
+  State<NoiseOverlay> createState() => _NoiseOverlayState();
+}
+
+class _NoiseOverlayState extends State<NoiseOverlay> {
+  ui.FragmentShader? _shader;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadShader();
+  }
+
+  Future<void> _loadShader() async {
+    final program = await ui.FragmentProgram.fromAsset(
+      'assets/shaders/noise.frag',
+    );
+
+    setState(() {
+      _shader = program.fragmentShader();
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    if (_shader == null) return const SizedBox.shrink();
+
+    return CustomPaint(
+      painter: _StaticNoisePainter(
+        shader: _shader!,
+        intensity: widget.intensity,
+      ),
+      child: const SizedBox.expand(),
+    );
+  }
+}
+
+class _StaticNoisePainter extends CustomPainter {
+  final ui.FragmentShader shader;
+  final double intensity;
+
+  _StaticNoisePainter({
+    required this.shader,
+    required this.intensity,
+  });
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    shader.setFloat(0, size.width);   // u_resolution.x
+    shader.setFloat(1, size.height);  // u_resolution.y
+    shader.setFloat(2, 1.0);          // u_time -> 고정
+    shader.setFloat(3, intensity);    // u_intensity
+
+    final paint = Paint()..shader = shader;
+
+    canvas.drawRect(Offset.zero & size, paint);
+  }
+
   @override
   bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
 }

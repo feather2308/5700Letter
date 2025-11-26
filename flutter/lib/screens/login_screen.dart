@@ -1,6 +1,7 @@
+import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'package:dio/dio.dart';
+
 import '../providers/auth_provider.dart';
 import '../services/dio_client.dart';
 import 'signup_screen.dart';

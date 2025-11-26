@@ -1,5 +1,6 @@
-import 'package:flutter/material.dart';
 import 'package:dio/dio.dart';
+import 'package:flutter/material.dart';
+
 import '../services/dio_client.dart';
 
 class SignupScreen extends StatefulWidget {

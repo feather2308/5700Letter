@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+
 import '../services/user_secure_storage.dart';
 
 class AuthProvider extends ChangeNotifier {

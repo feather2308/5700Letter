@@ -1,20 +1,16 @@
-import 'package:flutter_dotenv/flutter_dotenv.dart';
 import '../models/record.dart';
-import 'dio_client.dart'; // [중요] 우리가 만든 DioClient 임포트
+import 'dio_client.dart';
 
 class ApiService {
-  // [중요] 여기서 우리가 만든 DioClient의 dio 인스턴스를 가져와야 합니다!
-  // 이 _dio 안에는 토큰을 자동으로 넣는 'Interceptor'가 들어있습니다.
+  // DioClient에 이미 baseUrl(http://10.0.2.2:8080/api)이 설정되어 있습니다.
   final _dio = DioClient().dio;
 
-  static String get baseUrl => dotenv.env['API_URL'] ?? '';
-
-  // 1. 저장
+  // 1. 저장 (POST /api/records)
   Future<Map<String, dynamic>> saveRecord(String content, String emotion, String? fcmToken) async {
     try {
-      // [중요] http.post가 아니라 _dio.post를 써야 토큰이 날아갑니다!
+      // [수정] 앞에 baseUrl 변수 제거! 그냥 경로만 적으세요.
       final response = await _dio.post(
-        "$baseUrl/records",
+        "/records",
         data: {
           "content": content,
           "emotion": emotion,
@@ -32,10 +28,10 @@ class ApiService {
     }
   }
 
-  // 2. 조회
+  // 2. 상세 조회 (GET /api/records/{id})
   Future<Record> getRecord(int id) async {
     try {
-      final response = await _dio.get("$baseUrl/records/$id");
+      final response = await _dio.get("/records/$id"); // [수정] 상대 경로
 
       if (response.statusCode == 200) {
         return Record.fromJson(response.data);
@@ -47,11 +43,10 @@ class ApiService {
     }
   }
 
-  // 3. 목록 조회 (여기서 403 에러가 났었음)
+  // 3. 목록 조회 (GET /api/records/member/me)
   Future<List<Record>> getMemberRecords() async {
     try {
-      // [중요] _dio.get을 써야 헤더에 'Authorization: Bearer ...'가 붙어서 갑니다.
-      final response = await _dio.get("$baseUrl/records/member/me");
+      final response = await _dio.get("/records/member/me"); // [수정] 상대 경로
 
       if (response.statusCode == 200) {
         List<dynamic> body = response.data;
@@ -60,16 +55,15 @@ class ApiService {
         throw Exception("목록 조회 실패");
       }
     } catch (e) {
-      // 로그 확인용 (403이면 토큰 문제)
       print("목록 조회 에러: $e");
       throw Exception("목록 조회 실패: $e");
     }
   }
 
-  // 4. 삭제
+  // 4. 삭제 (DELETE /api/records/member/me)
   Future<void> deleteAllRecords() async {
     try {
-      final response = await _dio.delete("$baseUrl/records/member/me");
+      final response = await _dio.delete("/records/member/me"); // [수정] 상대 경로
 
       if (response.statusCode != 200) {
         throw Exception("삭제 실패");

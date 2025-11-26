@@ -1,7 +1,8 @@
-import 'package:flutter/material.dart';
-import '../services/api_service.dart';
-import '../models/record.dart';
 import 'package:firebase_messaging/firebase_messaging.dart'; // import 추가
+import 'package:flutter/material.dart';
+
+import '../models/record.dart';
+import '../services/api_service.dart';
 
 class WriteScreen extends StatefulWidget {
   const WriteScreen({super.key});

@@ -1,5 +1,6 @@
 package letter5700.service;
 
+import jdk.jfr.Label;
 import letter5700.dto.RecordResponse;
 import letter5700.entity.Advice;
 import letter5700.entity.DailyRecord;
@@ -10,6 +11,8 @@ import letter5700.repository.DailyRecordRepository;
 import letter5700.repository.MemberRepository;
 import io.qdrant.client.grpc.Points;
 import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.scheduling.annotation.Async;
@@ -30,6 +33,10 @@ public class RecordService {
     private final RagService ragService;
     private final FcmService fcmService;
 
+    @Autowired
+    @Lazy
+    private RecordService self;
+
     public Long saveRecord(RecordRequest request) {
         // 0. 사용자 조회
         Member member = memberRepository.findById(request.getMemberId())
@@ -44,7 +51,7 @@ public class RecordService {
         );
         DailyRecord savedRecord = recordRepository.save(record);
 
-        generateAdviceAsync(savedRecord.getId(), request.getContent(), request.getFcmToken());
+        self.generateAdviceAsync(savedRecord.getId(), request.getContent(), request.getFcmToken());
 
         return savedRecord.getId(); // 앱에는 바로 "성공" 응답이 감
     }
@@ -55,56 +62,46 @@ public class RecordService {
         try {
             System.out.println(">>> [비동기] 작업 시작 (ID: " + recordId + ")");
 
-            // (1) 감정 분석 (여기서 수행!)
+            // (1) 감정 분석
             String aiEmotion = geminiService.analyzeEmotion(content);
 
-            System.out.println(">>> [비동기] 조언 생성 시작 (ID: " + recordId + ")");
-
-            // ---------------------------------------------------------
-            // [RAG 핵심 로직 통합]
-
-            // 1. 사용자 일기 내용을 벡터로 변환
+            // (2) RAG 검색
             List<Float> queryVector = geminiService.createEmbedding(content);
-
-            // 2. Qdrant에서 유사한 지식 검색 (Top 3)
             List<Points.ScoredPoint> searchResults = ragService.search(queryVector, 3);
-
-            // 3. 검색된 지식들을 하나의 문자열로 합치기
             String knowledgeContext = searchResults.stream()
                     .map(point -> point.getPayloadMap().get("content").getStringValue())
                     .collect(Collectors.joining("\n- "));
 
-            // 4. 프롬프트 구성 (검색된 지식 + 사용자 일기)
+            // (3) 프롬프트 구성
             String finalPrompt = String.format("""
-                당신은 심리 상담 전문가이자 따뜻한 조언자입니다.
+                당신은 심리 상담 전문가입니다.
                 아래 '참고 지식'을 바탕으로, 사용자의 일기에 대해 5700자 내외의 깊이 있는 편지를 써주세요.
                 
-                [참고 지식 (DB 검색 결과)]
-                - %s
+                [참고 지식]
+                %s
                 
                 [사용자 일기]
                 %s
                 """, knowledgeContext, content);
 
-            // 5. Gemini에게 최종 요청 (조언 생성 - 시간 오래 걸림)
+            // (4) 조언 생성
             String aiAdvice = geminiService.getAdvice(finalPrompt);
 
-            // ---------------------------------------------------------
-
-            // 6. DB 업데이트 (비동기라 다시 조회해서 저장)
+            // (5) DB 업데이트 (트랜잭션 분리됨)
+            // 주의: Async 내부에서는 트랜잭션이 끊기므로 다시 조회해서 처리
             recordRepository.findById(recordId).ifPresent(record -> {
-                // 감정 업데이트
+                // 1. 감정 업데이트 후 저장 (일기 테이블)
                 record.setEmotion(aiEmotion);
-                recordRepository.save(record); // 감정 반영
+                recordRepository.save(record);
 
-                // 조언 저장
+                // 2. 조언 생성 후 저장 (조언 테이블)
                 Advice advice = new Advice(record, aiAdvice);
                 adviceRepository.save(advice);
 
-                System.out.println(">>> [비동기] 완료! 감정: " + aiEmotion);
+                System.out.println(">>> [비동기] DB 저장 완료! 감정: " + aiEmotion);
             });
 
-            // [마지막에 추가] 진짜 작업이 다 끝나면 알림 발사!
+            // (6) 알림 전송
             fcmService.sendNotification(
                     fcmToken,
                     "5700 Letter 도착",
@@ -113,7 +110,7 @@ public class RecordService {
 
         } catch (Exception e) {
             e.printStackTrace();
-            System.err.println(">>> [비동기] 조언 생성 실패: " + e.getMessage());
+            System.err.println(">>> [비동기] 실패: " + e.getMessage());
         }
     }
 

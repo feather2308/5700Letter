@@ -1,4 +1,4 @@
-package letter5700.controller;
+package letter5700.controller.api;
 
 import letter5700.entity.Member;
 import letter5700.service.MemberService;
@@ -12,7 +12,7 @@ import org.springframework.web.bind.annotation.*;
 @RestController
 @RequestMapping("/api/member")
 @RequiredArgsConstructor
-public class MemberController {
+public class MemberRestController {
 
     private final MemberService memberService;
 

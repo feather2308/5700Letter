@@ -1,4 +1,4 @@
-package letter5700.controller;
+package letter5700.controller.api;
 
 import letter5700.dto.AuthDto;
 import letter5700.service.AuthService;
@@ -12,7 +12,7 @@ import org.springframework.web.bind.annotation.RestController;
 @RestController
 @RequestMapping("/api/auth")
 @RequiredArgsConstructor
-public class AuthController {
+public class AuthRestController {
 
     private final AuthService authService;
 

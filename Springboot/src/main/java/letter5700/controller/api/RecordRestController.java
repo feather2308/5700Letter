@@ -1,4 +1,4 @@
-package letter5700.controller;
+package letter5700.controller.api;
 
 import letter5700.dto.RecordRequest;
 import letter5700.dto.RecordResponse;
@@ -16,7 +16,7 @@ import java.util.Map;
 @RestController
 @RequestMapping("/api/records") // 공통 경로
 @RequiredArgsConstructor
-public class RecordController {
+public class RecordRestController {
 
     private final RecordService recordService;
 

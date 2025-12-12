@@ -34,7 +34,25 @@ public class SecurityConfig {
                         .sessionCreationPolicy(SessionCreationPolicy.STATELESS)
                 )
                 .authorizeHttpRequests(auth -> auth
+                        // 🔥 정적 리소스 허용
+                        .requestMatchers(
+                                "/css/**",
+                                "/js/**",
+                                "/img/**",
+                                "/favicon.ico"
+                        ).permitAll()
+
+                        // 🔥 로그인/회원가입 화면 허용
+                        .requestMatchers(
+                                "/",
+                                "/login",
+                                "/register"
+                        ).permitAll()
+
+                        // 🔥 로그인 API 허용
                         .requestMatchers("/api/auth/**").permitAll()
+
+                        // 🔥 나머지는 인증 필요
                         .anyRequest().authenticated()
                 )
                 // [추가] JWT 필터를 ID/PW 인증 필터 앞에 끼워 넣음

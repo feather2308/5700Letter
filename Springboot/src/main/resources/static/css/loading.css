@@ -1,0 +1,273 @@
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    margin: 0;
+    padding: 0;
+    font-family: 'Inter', 'Noto Sans KR', sans-serif;
+    overflow: hidden;
+}
+
+.page-wrapper {
+    display: flex;
+    width: 100vw;
+    height: 100vh;
+    background-color: #fff9d4;
+}
+
+/* 좌측 사이드바 */
+.sidebar {
+    width: 70px;
+    height: 100vh;
+    background-color: #fff5b4;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding-top: 26px;
+    flex-shrink: 0;
+}
+
+.menu-button {
+    width: 42px;
+    height: 32px;
+    border: 5px solid #622600;
+    border-radius: 10px;
+    background: transparent;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.menu-icon span {
+    width: 4px;
+    height: 32px;
+    background-color: #622600;
+    border-radius: 15px;
+}
+
+/* 메인 컨텐츠 */
+.main-content {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+}
+
+/* 상단 헤더 */
+.header {
+    height: 81px;
+    display: flex;
+    align-items: center;
+    padding-left: 22px;
+}
+
+.logo {
+    font-size: 40px;
+    font-weight: 700;
+    color: #622600;
+}
+
+/* 중앙 컨텐츠 영역 */
+.content-area {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 50px 120px 80px;
+    overflow: auto;
+}
+
+/* 감정 섹션 */
+.emotion-section {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    margin-bottom: 60px;
+}
+
+.emotion-label {
+    font-size: 24px;
+    font-weight: 400;
+    color: #000;
+    margin-bottom: 24px;
+}
+
+.emotion-status {
+    font-size: 60px;
+    font-weight: 600;
+    color: #000;
+    margin-bottom: 40px;
+}
+
+.character-container {
+    width: 368px;
+    height: 337px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+.character-img {
+    max-width: 100%;
+    max-height: 100%;
+    object-fit: contain;
+}
+
+/* 로딩 박스 */
+.loading-box {
+    width: 100%;
+    max-width: 1000px;
+    background: white;
+    border-radius: 15px;
+    padding: 23px 42px 42px;
+    position: relative;
+}
+
+/* 타임스탬프 */
+.timestamp {
+    position: absolute;
+    top: 23px;
+    right: 50%;
+    transform: translateX(50%);
+    font-size: 24px;
+    color: #999;
+}
+
+/* 컨텐츠 미리보기 */
+.content-preview {
+    font-size: 24px;
+    line-height: 1.6;
+    color: #000;
+    margin-top: 56px;
+    margin-bottom: 30px;
+    min-height: 143px;
+    max-height: 200px;
+    overflow: auto;
+}
+
+/* 구분선 */
+.loading-box::before {
+    content: '';
+    position: absolute;
+    left: 42px;
+    right: 42px;
+    bottom: 111px;
+    height: 1px;
+    background: #ddd;
+}
+
+/* 로딩 상태 */
+.loading-status {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 12px;
+    padding-top: 12px;
+}
+
+.spinner {
+    width: 23px;
+    height: 23px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.loading-icon {
+    width: 23px;
+    height: 23px;
+}
+
+.rotating {
+    animation: rotate 2s linear infinite;
+}
+
+@keyframes rotate {
+    from {
+        transform: rotate(0deg);
+    }
+    to {
+        transform: rotate(360deg);
+    }
+}
+
+.loading-text {
+    font-size: 38px;
+    font-weight: 500;
+    color: #000;
+}
+
+/* 반응형 디자인 */
+@media (max-width: 1400px) {
+    .content-area {
+        padding: 40px 80px 60px;
+    }
+
+    .loading-box {
+        max-width: 800px;
+    }
+
+    .emotion-status {
+        font-size: 48px;
+    }
+}
+
+@media (max-width: 768px) {
+    .sidebar {
+        width: 50px;
+        padding-top: 16px;
+    }
+
+    .menu-button {
+        width: 32px;
+        height: 24px;
+    }
+
+    .header {
+        padding-left: 16px;
+    }
+
+    .logo {
+        font-size: 28px;
+    }
+
+    .content-area {
+        padding: 30px 20px 40px;
+    }
+
+    .emotion-label {
+        font-size: 18px;
+    }
+
+    .emotion-status {
+        font-size: 36px;
+        margin-bottom: 24px;
+    }
+
+    .character-container {
+        width: 250px;
+        height: 230px;
+    }
+
+    .loading-box {
+        padding: 20px 24px 30px;
+    }
+
+    .content-preview {
+        font-size: 18px;
+        min-height: 100px;
+        margin-top: 40px;
+    }
+
+    .loading-text {
+        font-size: 24px;
+    }
+
+    .timestamp {
+        font-size: 18px;
+    }
+}

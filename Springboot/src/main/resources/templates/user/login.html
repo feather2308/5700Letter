@@ -2,40 +2,48 @@
 <html lang="ko">
 <head>
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>5700 LETTER - 로그인</title>
     <link rel="stylesheet" href="/css/login.css">
     <script defer src="/js/login.js"></script>
 </head>
 <body>
 
-<div class="container">
-    <div class="login-box">
+<div class="background">
+    <div class="login-container">
+        <div class="login-box">
 
-        <div class="logo-area">
-            <img src="/img/letter-icon.png" alt="logo" class="logo-img">
-            <h1 class="title">5700 LETTER</h1>
-            <p class="subtitle">당신의 마음을 위한 긴 편지</p>
+            <div class="logo-section">
+                <div class="mail-icon">
+                    <img src="/img/letter-icon.png" alt="mail icon">
+                </div>
+                <h1 class="title">5700 LETTER</h1>
+                <p class="subtitle">당신의 마음을 위한 긴 편지</p>
+            </div>
+
+            <form id="loginForm" class="form-section">
+                <div class="input-wrapper">
+                    <div class="username-field">
+                        <img src="/img/person.png" alt="person" class="person-icon">
+                        <input type="text" id="username" class="input-field username-input" placeholder="아이디를 입력하세요" required>
+                    </div>
+                </div>
+
+                <div class="input-wrapper">
+                    <div class="password-field">
+                        <img src="/img/lock-icon.png" alt="lock" class="lock-icon">
+                        <input type="password" id="password" class="input-field password-input" placeholder="비밀번호를 입력하세요" required>
+                    </div>
+                </div>
+
+                <button type="submit" class="login-button">로그인</button>
+            </form>
+
+            <p class="register-link">
+                계정이 없으신가요? <a href="/register">회원가입</a>
+            </p>
+
         </div>
-
-        <form id="loginForm">
-            <div class="input-group">
-                <label>아이디</label>
-                <input type="text" id="username" placeholder="아이디를 입력하세요" required>
-            </div>
-
-            <div class="input-group">
-                <label>비밀번호</label>
-                <input type="password" id="password" placeholder="비밀번호를 입력하세요" required>
-            </div>
-
-            <button type="submit" class="login-btn">로그인</button>
-        </form>
-
-        <p class="register-text">
-            계정이 없으신가요?
-            <a href="/register">회원가입</a>
-        </p>
-
     </div>
 </div>
 

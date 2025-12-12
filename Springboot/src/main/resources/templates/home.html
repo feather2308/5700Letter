@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>5700 LETTER - 홈</title>
+    <link rel="stylesheet" href="/css/home.css">
+    <script defer src="/js/home.js"></script>
+</head>
+<body>
+
+<div class="page-wrapper">
+    <!-- 좌측 사이드바 -->
+    <aside class="sidebar" id="sidebar">
+        <button class="menu-button" id="menuButton">
+            <div class="menu-icon">
+                <span></span>
+                <span></span>
+                <span></span>
+            </div>
+        </button>
+
+        <!-- 확장된 사이드바 컨텐츠 -->
+        <div class="sidebar-content" id="sidebarContent">
+            <h3 class="sidebar-title">지난 기록들</h3>
+            <div class="records-list" id="recordsList">
+                <!-- 기록 목록이 동적으로 추가됩니다 -->
+            </div>
+        </div>
+    </aside>
+
+    <!-- 메인 컨텐츠 영역 -->
+    <main class="main-content">
+        <!-- 상단 헤더 -->
+        <header class="header">
+            <h1 class="logo">5700 Letter</h1>
+        </header>
+
+        <!-- 중앙 컨텐츠 -->
+        <div class="content-area">
+            <!-- 캐릭터 이미지 -->
+            <div class="character-section">
+                <img src="/img/character.png" alt="character" class="character-img">
+            </div>
+
+            <!-- 타이틀 텍스트 -->
+            <h2 class="main-title">당신의 이야기를 들려주세요</h2>
+
+            <!-- 글 작성 영역 -->
+            <div class="write-section">
+                <div class="write-box">
+                    <textarea
+                        id="contentInput"
+                        class="content-textarea"
+                        placeholder="오늘 하루는 어떠셨나요? 당신의 이야기를 자유롭게 들려주세요."
+                    ></textarea>
+
+                    <div class="scrollbar">
+                        <div class="scrollbar-thumb"></div>
+                    </div>
+
+                    <button class="record-button" id="recordButton">
+                        <img src="/img/record-icon.png" alt="record" class="record-icon">
+                    </button>
+                </div>
+            </div>
+        </div>
+    </main>
+</div>
+
+</body>
+</html>

@@ -4,43 +4,55 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>회원가입 - 5700 LETTER</title>
-
     <link rel="stylesheet" href="/css/register.css">
     <script defer src="/js/register.js"></script>
 </head>
-
 <body>
-<div class="container">
-    <div class="card">
 
-        <div class="logo-container">
-            <img src="/img/mail-icon.png" class="logo-icon" alt="mail">
+<div class="background">
+    <div class="register-container">
+        <div class="register-box">
+
+            <div class="logo-section">
+                <div class="mail-icon">
+                    <img src="/img/letter-icon.png" alt="mail icon">
+                </div>
+                <h1 class="title">5700 LETTER</h1>
+                <p class="subtitle">당신의 마음을 위한 긴 편지</p>
+            </div>
+
+            <form id="registerForm" class="form-section">
+                <div class="input-wrapper">
+                    <div class="username-field">
+                        <img src="/img/person.png" alt="person" class="person-icon">
+                        <input type="text" id="username" class="input-field username-input" placeholder="아이디를 입력하세요" required>
+                    </div>
+                </div>
+
+                <div class="input-wrapper">
+                    <div class="password-field">
+                        <img src="/img/lock-icon.png" alt="lock" class="lock-icon">
+                        <input type="password" id="password" class="input-field password-input" placeholder="비밀번호를 입력하세요" required>
+                    </div>
+                </div>
+
+                <div class="input-wrapper">
+                    <div class="nickname-field">
+                        <img src="/img/person.png" alt="person" class="nickname-icon">
+                        <input type="text" id="nickname" class="input-field nickname-input" placeholder="사용하실 이름을 입력하세요" required>
+                    </div>
+                </div>
+
+                <button type="submit" class="register-button">가입하기</button>
+            </form>
+
+            <p class="login-link">
+                이미 계정이 있으신가요? <a href="/login">로그인</a>
+            </p>
+
         </div>
-
-        <h1 class="title">5700 LETTER</h1>
-        <p class="subtitle">당신의 마음을 위한 긴 편지</p>
-
-        <form id="registerForm" method="POST" action="/register">
-            <div class="input-box">
-                <span class="input-label">아이디</span>
-                <input type="text" id="username" required placeholder="아이디를 입력하세요">
-            </div>
-
-            <div class="input-box">
-                <span class="input-label">비밀번호</span>
-                <input type="password" id="password" required placeholder="비밀번호를 입력하세요">
-            </div>
-
-            <div class="input-box">
-                <span class="input-label">이름 (닉네임)</span>
-                <input type="text" id="nickname" required placeholder="사용하실 이름을 입력하세요">
-            </div>
-
-            <button type="submit" class="register-btn">가입하기</button>
-            <button type="button" class="back-btn" onclick="history.back()">뒤로가기</button>
-        </form>
-
     </div>
 </div>
+
 </body>
 </html>

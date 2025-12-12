@@ -1,0 +1,242 @@
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    margin: 0;
+    padding: 0;
+    font-family: 'Inter', 'Noto Sans KR', sans-serif;
+    overflow: hidden;
+}
+
+.page-wrapper {
+    display: flex;
+    width: 100vw;
+    height: 100vh;
+    background-color: #fff9d4;
+}
+
+/* 좌측 사이드바 */
+.sidebar {
+    width: 70px;
+    height: 100vh;
+    background-color: #fff5b4;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding-top: 26px;
+    flex-shrink: 0;
+}
+
+.menu-button {
+    width: 42px;
+    height: 32px;
+    border: 5px solid #622600;
+    border-radius: 10px;
+    background: transparent;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.menu-icon span {
+    width: 4px;
+    height: 32px;
+    background-color: #622600;
+    border-radius: 15px;
+}
+
+/* 메인 컨텐츠 */
+.main-content {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+}
+
+/* 상단 헤더 */
+.header {
+    height: 81px;
+    display: flex;
+    align-items: center;
+    padding-left: 22px;
+}
+
+.logo {
+    font-size: 40px;
+    font-weight: 700;
+    color: #622600;
+}
+
+/* 중앙 컨텐츠 영역 */
+.content-area {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 50px 120px 80px;
+    overflow: auto;
+}
+
+/* 감정 섹션 */
+.emotion-section {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    margin-bottom: 60px;
+}
+
+.emotion-label {
+    font-size: 24px;
+    font-weight: 400;
+    color: #000;
+    margin-bottom: 24px;
+}
+
+.emotion-result {
+    font-size: 73px;
+    font-weight: 600;
+    color: #000;
+    margin-bottom: 40px;
+}
+
+.character-container {
+    width: 368px;
+    height: 337px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+.character-img {
+    max-width: 100%;
+    max-height: 100%;
+    object-fit: contain;
+}
+
+/* 결과 박스 */
+.result-box {
+    width: 100%;
+    max-width: 1000px;
+    background: white;
+    border-radius: 15px;
+    padding: 23px 42px 42px;
+    position: relative;
+}
+
+/* 타임스탬프 */
+.timestamp {
+    text-align: center;
+    font-size: 24px;
+    color: #999;
+    margin-bottom: 36px;
+}
+
+/* 조언 미리보기 */
+.advice-preview {
+    font-size: 24px;
+    line-height: 1.7;
+    color: #000;
+    margin-bottom: 30px;
+    min-height: 167px;
+}
+
+/* 구분선 */
+.divider {
+    width: 100%;
+    height: 1px;
+    background: #ddd;
+    margin-bottom: 12px;
+}
+
+/* 자세히 보기 버튼 */
+.detail-button {
+    display: block;
+    width: 100%;
+    padding: 12px;
+    background: transparent;
+    border: none;
+    font-size: 38px;
+    font-weight: 500;
+    color: #000;
+    cursor: pointer;
+    text-align: center;
+    transition: background-color 0.2s;
+}
+
+.detail-button:hover {
+    background-color: rgba(0, 0, 0, 0.02);
+}
+
+/* 반응형 디자인 */
+@media (max-width: 1400px) {
+    .content-area {
+        padding: 40px 80px 60px;
+    }
+
+    .result-box {
+        max-width: 800px;
+    }
+
+    .emotion-result {
+        font-size: 60px;
+    }
+}
+
+@media (max-width: 768px) {
+    .sidebar {
+        width: 50px;
+        padding-top: 16px;
+    }
+
+    .menu-button {
+        width: 32px;
+        height: 24px;
+    }
+
+    .header {
+        padding-left: 16px;
+    }
+
+    .logo {
+        font-size: 28px;
+    }
+
+    .content-area {
+        padding: 30px 20px 40px;
+    }
+
+    .emotion-label {
+        font-size: 18px;
+    }
+
+    .emotion-result {
+        font-size: 48px;
+        margin-bottom: 24px;
+    }
+
+    .character-container {
+        width: 250px;
+        height: 230px;
+    }
+
+    .result-box {
+        padding: 20px 24px 30px;
+    }
+
+    .advice-preview {
+        font-size: 18px;
+        min-height: 120px;
+    }
+
+    .detail-button {
+        font-size: 28px;
+    }
+
+    .timestamp {
+        font-size: 18px;
+    }
+}

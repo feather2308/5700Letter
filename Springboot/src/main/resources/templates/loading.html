@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>5700 LETTER - 로딩</title>
+    <link rel="stylesheet" href="/css/loading.css">
+    <script defer src="/js/loading.js"></script>
+</head>
+<body>
+
+<div class="page-wrapper">
+    <!-- 좌측 사이드바 -->
+    <aside class="sidebar">
+        <button class="menu-button">
+            <div class="menu-icon">
+                <span></span>
+            </div>
+        </button>
+    </aside>
+
+    <!-- 메인 컨텐츠 -->
+    <main class="main-content">
+        <!-- 상단 헤더 -->
+        <header class="header">
+            <h1 class="logo">5700 Letter</h1>
+        </header>
+
+        <!-- 중앙 컨텐츠 -->
+        <div class="content-area">
+            <!-- 감정 섹션 -->
+            <div class="emotion-section">
+                <p class="emotion-label">내가 머무는 감정</p>
+                <h2 class="emotion-status">마음을 읽는 중...</h2>
+                <div class="character-container">
+                    <img src="/img/character-loading.png" alt="character" class="character-img">
+                </div>
+            </div>
+
+            <!-- 로딩 박스 -->
+            <div class="loading-box">
+                <div class="content-preview" id="contentPreview">
+                    <!-- 입력한 글 내용이 여기에 표시됩니다 -->
+                </div>
+
+                <div class="loading-status">
+                    <div class="spinner">
+                        <img src="/img/loading-icon.png" alt="loading" class="loading-icon rotating">
+                    </div>
+                    <p class="loading-text">AI가 편지를 쓰고 있습니다...</p>
+                </div>
+
+                <p class="timestamp" id="timestamp">25.12.12 17:43</p>
+            </div>
+        </div>
+    </main>
+</div>
+
+</body>
+</html>
